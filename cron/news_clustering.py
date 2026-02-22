@@ -2,7 +2,8 @@
 news_clustering.py
 ==================
 Reads yesterday's articles from Supabase DB, clusters them semantically,
-labels each cluster with Ollama, and uploads the result JSON to Supabase Storage.
+labels each cluster with Groq (free LLM API), and uploads the result JSON
+to Supabase Storage.
 
 Run manually:  python news_clustering.py
 Run via CI:    GitHub Actions workflow (.github/workflows/cluster.yml)
@@ -15,9 +16,15 @@ PIPELINE:
   4. Initial clustering with tight DBSCAN (eps=0.28)
   5. Hierarchical splitting: recursively split oversized clusters (>150-200 articles)
   6. Apply visual exaggeration for cleaner 3D separation
-  7. Label each cluster with Ollama (single-topic, strict prompt)
+  7. Label each cluster with Groq / llama-3.1-8b-instant (single-topic, strict prompt)
   8. Score each article's semantic relevance to its cluster name
   9. Upload result to Supabase Storage as <YYYY-MM-DD>.json
+
+GROQ SETUP:
+  - Sign up free at console.groq.com
+  - Create an API key
+  - Add it as GROQ_API_KEY in GitHub Actions secrets (and Render env vars if needed)
+  - Free tier: 14,400 requests/day, more than enough for daily clustering
 """
 
 import colorsys
@@ -27,7 +34,6 @@ import random
 import re
 from collections import Counter
 from datetime import datetime
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -44,14 +50,13 @@ from supabase import create_client
 # ──────────────────────────────────────────────────────────────────────────────
 LOCAL_TZ = "America/Chicago"
 
-# Ollama — only needed if running locally with Ollama installed.
-# In GitHub Actions, set OLLAMA_URL to a cloud endpoint or leave clustering
-# to use the fallback keyword labeller (Ollama won't be available in CI).
+# Groq API — free LLM inference, replaces local Ollama
+# Sign up at console.groq.com, create an API key, add as GROQ_API_KEY secret
 # ENV VARIABLE MUSH
-OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
-# ENV VARIABLE MUSH
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
-OLLAMA_TIMEOUT = 30
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+GROQ_MODEL = "llama-3.1-8b-instant"   # free, fast, high quality
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_TIMEOUT = 30
 
 # ── EMBEDDING MODEL ────────────────────────────────────────────────────────────
 EMBEDDING_MODEL = "all-mpnet-base-v2"
@@ -113,42 +118,60 @@ def _cluster_colors(n: int) -> list:
 
 
 # ──────────────────────────────────────────────────────────────────────────────
-# OLLAMA LABELLING
+# GROQ LABELLING
 # ──────────────────────────────────────────────────────────────────────────────
-def _label_cluster_ollama(titles: list) -> str:
+def _label_cluster_groq(titles: list) -> str:
+    """
+    Ask Groq (free LLM API) for a 2-4 word topic label for a cluster.
+    Falls back to keyword extraction if Groq is unavailable or key is missing.
+
+    Groq uses the OpenAI-compatible chat completions API format.
+    Model: llama-3.1-8b-instant (free, ~500 tokens/sec)
+    """
+    if not GROQ_API_KEY:
+        print("  ⚠ GROQ_API_KEY not set — using keyword fallback")
+        return _label_cluster_fallback(titles)
+
     sample = random.sample(titles, min(20, len(titles)))
     titles_text = "\n".join(f"- {t}" for t in sample)
 
-    prompt = (
-        "You are a senior news editor. Read the article headlines below and "
-        "identify the ONE single broad topic they share.\n\n"
-        "Rules:\n"
-        "- Reply with ONLY 2 to 4 words. Nothing else.\n"
-        "- Do NOT use commas or list multiple topics.\n"
-        "- Do NOT write full sentences or explanations.\n"
-        "- Examples of good answers: 'Gaza Aid Crisis'  |  'US Election Results'  |  'Tech Industry Layoffs'\n\n"
-        f"Headlines:\n{titles_text}\n\n"
-        "TOPIC (2-4 words only):"
-    )
-
     try:
         resp = requests.post(
-            OLLAMA_URL,
-            json={
-                "model": OLLAMA_MODEL,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.1,
-                    "num_predict": 15,
-                    "stop": ["\n", "Here", "The articles", "These articles", ","],
-                },
+            GROQ_API_URL,
+            headers={
+                # CONNECTION MUSH
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
             },
-            timeout=OLLAMA_TIMEOUT,
+            json={
+                "model": GROQ_MODEL,
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a senior news editor. Your only job is to read "
+                            "a list of headlines and output a 2-4 word topic label. "
+                            "Reply with ONLY the topic words. No punctuation, no "
+                            "explanation, no sentences. Examples of correct output: "
+                            "Gaza Aid Crisis | US Election Results | Tech Industry Layoffs"
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Headlines:\n{titles_text}\n\nTOPIC (2-4 words only):",
+                    },
+                ],
+                "temperature": 0.1,
+                "max_tokens": 20,
+                "stop": ["\n", ","],
+            },
+            timeout=GROQ_TIMEOUT,
         )
-        if resp.status_code == 200:
-            raw = resp.json().get("response", "").strip()
 
+        if resp.status_code == 200:
+            raw = resp.json()["choices"][0]["message"]["content"].strip()
+
+            # Strip any preamble the model snuck in
             for prefix in [
                 "Topic:", "Topic name:", "The topic is", "Based on",
                 "ONE TOPIC:", "Main topic:", "Answer:", "Label:",
@@ -162,11 +185,13 @@ def _label_cluster_ollama(titles: list) -> str:
             raw = " ".join(raw.split()[:5])
 
             if len(raw) >= 3:
-                print(f"  ✓ Ollama label: '{raw}'")
+                print(f"  ✓ Groq label: '{raw}'")
                 return raw
+        else:
+            print(f"  ✗ Groq HTTP {resp.status_code}: {resp.text[:200]}")
 
     except Exception as exc:
-        print(f"  ✗ Ollama error: {exc} — falling back to keyword extraction")
+        print(f"  ✗ Groq error: {exc} — falling back to keyword extraction")
 
     return _label_cluster_fallback(titles)
 
@@ -454,7 +479,7 @@ def build_cluster_cache():
             color = "#808080"
         else:
             print(f"\n  Cluster {cluster_id} ({len(titles)} articles):")
-            cluster_name = _label_cluster_ollama(titles)
+            cluster_name = _label_cluster_groq(titles)
             color = palette[int(cluster_id) % len(palette)]
 
         relevance_map = {

@@ -9,3 +9,4 @@ umap-learn==0.5.6
 scikit-learn==1.5.1
 numpy==1.26.4
 supabase==2.5.0
+groq==0.9.0
