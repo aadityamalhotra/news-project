@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
 import './App.css';
-import NewsVisualization from './NewsVisualization';
-import Sidebar from './Sidebar';
-import AboutMe from './AboutMe';
+import NewsVisualization from './components/NewsVisualization';
+import Sidebar from './components/Sidebar';
+import AboutMe from './components/AboutMe';
 import axios from 'axios';
 
 // ENV VARIABLE MUSH
