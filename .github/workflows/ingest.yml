@@ -1,10 +1,14 @@
 name: Daily News Ingestion
 
 on:
-  # Runs every day at 7:00 AM UTC (2:00 AM Chicago time)
+  # 12:10 AM Madison time (America/Chicago)
+  # CST (winter) = UTC-6  → 06:10 UTC
+  # CDT (summer) = UTC-5  → 05:10 UTC
+  # GitHub Actions cron runs in UTC, so this is set for CST (winter).
+  # Update to '10 5 * * *' in March when daylight saving kicks in.
   schedule:
-    - cron: '0 7 * * *'
-  # Also allow manual triggering from the GitHub Actions UI
+    - cron: '10 6 * * *'
+  # Allow manual triggering from the GitHub Actions UI
   workflow_dispatch:
 
 jobs:

@@ -1,7 +1,14 @@
 name: News Clustering
 
 on:
-  # Triggered programmatically by ingest.yml after successful ingestion
+  # 2:00 AM Madison time (America/Chicago)
+  # CST (winter) = UTC-6  → 08:00 UTC
+  # CDT (summer) = UTC-5  → 07:00 UTC
+  # GitHub Actions cron runs in UTC, so this is set for CST (winter).
+  # Update to '0 7 * * *' in March when daylight saving kicks in.
+  schedule:
+    - cron: '0 8 * * *'
+  # Also triggered programmatically by ingest.yml after successful ingestion
   workflow_dispatch:
 
 jobs:
@@ -31,10 +38,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          # Ollama is not available in GitHub Actions — clustering will use
-          # the keyword fallback labeller instead. To use Ollama, you would
-          # need a self-hosted runner or a cloud Ollama endpoint.
-          # OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+          # ENV VARIABLE MUSH — get your free key at console.groq.com
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           cd cron
           python news_clustering.py
