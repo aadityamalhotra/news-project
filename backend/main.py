@@ -13,7 +13,6 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -224,20 +223,22 @@ async def get_available_dates():
     except Exception as exc:
         print(f"Warning: could not list Supabase Storage files: {exc}")
 
-    # DB dates that don't have a cache yet
+    # DB dates that don't have a cache yet — pure SQLAlchemy, no pandas
     uncached = []
     if DATABASE_URL:
         try:
             # CONNECTION MUSH
             engine = create_engine(DATABASE_URL)
             query = text("""
-                SELECT DISTINCT DATE(publish_date) as date
+                SELECT DISTINCT DATE(publish_date) AS date
                 FROM article_data
                 ORDER BY date DESC
                 LIMIT 30
             """)
-            df = pd.read_sql(query, engine)
-            db_dates = set(str(d) for d in df["date"].tolist())
+            with engine.connect() as conn:
+                result = conn.execute(query)
+                db_dates = {str(row[0]) for row in result}
+
             cached_set = set(cached)
             uncached = sorted(db_dates - cached_set, reverse=True)
         except Exception as exc:
