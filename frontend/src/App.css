@@ -1,0 +1,419 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #FAF7F0;
+  color: #4A4947;
+  /* overflow: hidden removed - allow natural scrolling for About page */
+}
+
+.App {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #FAF7F0;
+  overflow: hidden; /* Prevent scroll on main visualization page */
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+.app-header {
+  padding: 16px 40px;
+  background: rgba(250, 247, 240, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 2px solid #B17457;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-header h1 {
+  font-size: 26px;
+  font-weight: 600;
+  color: #4A4947;
+}
+
+.date-display {
+  font-size: 13px;
+  color: #B17457;
+  font-weight: 400;
+}
+
+/* About Me button */
+.about-btn {
+  padding: 10px 22px;
+  background: transparent;
+  border: 2px solid #B17457;
+  border-radius: 8px;
+  color: #B17457;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  letter-spacing: 0.3px;
+}
+
+.about-btn:hover {
+  background: #B17457;
+  color: #FAF7F0;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(177, 116, 87, 0.35);
+}
+
+/* ── Main layout ───────────────────────────────────────────────────────────── */
+.main-container {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Right panel: 3D viz on top, article list below ────────────────────────── */
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.visualization-container {
+  /* When no article panel is visible, takes all available height.
+     When article panel is visible, splits at ~62% / 38%. */
+  flex: 1 1 0;
+  min-height: 0;
+  position: relative;
+  background: #FAF7F0;
+}
+
+/* ── Article panel (below the 3D canvas) ───────────────────────────────────── */
+.article-panel {
+  flex: 0 0 45%;  /* Increased from 38% to 45% for more visible space (LOCATION: line 112) */
+  min-height: 0;
+  border-top: 2px solid #B17457;
+  background: rgba(250, 247, 240, 0.98);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: panelSlideUp 0.3s ease-out;
+}
+
+@keyframes panelSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.article-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  border-bottom: 1px solid rgba(177, 116, 87, 0.25);
+  flex-shrink: 0;
+  background: rgba(250, 247, 240, 0.98);
+}
+
+.article-panel-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.article-panel-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4A4947;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.article-panel-count {
+  font-size: 12px;
+  color: #B17457;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.article-panel-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 16px 16px;
+}
+
+.article-panel-list::-webkit-scrollbar {
+  width: 5px;
+}
+.article-panel-list::-webkit-scrollbar-track {
+  background: rgba(216, 210, 194, 0.3);
+}
+.article-panel-list::-webkit-scrollbar-thumb {
+  background: rgba(177, 116, 87, 0.4);
+  border-radius: 3px;
+}
+.article-panel-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(177, 116, 87, 0.65);
+}
+
+.article-panel-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;  /* Increased from 10px 12px for more breathing room (LOCATION: line 194) */
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.18s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.article-panel-item:hover {
+  background: rgba(177, 116, 87, 0.08);
+  border-color: rgba(177, 116, 87, 0.3);
+  transform: translateX(3px);
+}
+
+.article-panel-rank {
+  font-size: 11px;
+  font-weight: 700;
+  color: #B17457;
+  opacity: 0.6;
+  width: 20px;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.article-panel-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.article-panel-item-title {
+  font-size: 15px;  /* Increased from 13px to 15px (LOCATION: line 224) */
+  font-weight: 500;
+  color: #4A4947;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+
+.article-panel-item:hover .article-panel-item-title {
+  color: #B17457;
+}
+
+.article-panel-meta {
+  font-size: 12px;  /* Increased from 11px to 12px (LOCATION: line 239) */
+  color: #9A9591;
+}
+
+.article-panel-source {
+  font-weight: 600;
+  color: #B17457;
+  opacity: 0.8;
+}
+
+.article-panel-author {
+  font-style: italic;
+}
+
+.article-panel-arrow {
+  font-size: 13px;
+  color: #B17457;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  flex-shrink: 0;
+}
+
+.article-panel-item:hover .article-panel-arrow {
+  opacity: 0.7;
+}
+
+/* ── Loading State ────────────────────────────────────────────────────────── */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(250, 247, 240, 0.95);
+  z-index: 1000;
+}
+
+.loading-spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #D8D2C2;
+  border-top-color: #B17457;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+  font-size: 18px;
+  margin-bottom: 8px;
+  color: #4A4947;
+}
+
+.loading-subtext {
+  font-size: 14px;
+  color: #B17457;
+}
+
+/* ── Error State ─────────────────────────────────────────────────────────── */
+.error-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(250, 247, 240, 0.95);
+  z-index: 1000;
+}
+
+.error-box {
+  background: rgba(177, 116, 87, 0.1);
+  border: 2px solid #B17457;
+  border-radius: 12px;
+  padding: 40px;
+  max-width: 520px;
+  text-align: center;
+}
+
+.error-box h2 {
+  color: #B17457;
+  margin-bottom: 16px;
+  font-size: 22px;
+}
+
+.error-box p {
+  color: #4A4947;
+  margin-bottom: 24px;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.error-box button {
+  background: #4A4947;
+  color: #FAF7F0;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.error-box button:hover {
+  background: #B17457;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(177, 116, 87, 0.4);
+}
+
+/* ── Empty State ─────────────────────────────────────────────────────────── */
+.empty-state {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  max-width: 480px;
+}
+
+.empty-state h2 {
+  font-size: 30px;
+  margin-bottom: 14px;
+  color: #4A4947;
+}
+
+.empty-state p {
+  font-size: 16px;
+  color: #B17457;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.cta-button {
+  background: #4A4947;
+  color: #FAF7F0;
+  border: none;
+  padding: 16px 48px;
+  border-radius: 12px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(74, 73, 71, 0.3);
+}
+
+.cta-button:hover {
+  background: #B17457;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(177, 116, 87, 0.5);
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 14px 20px;
+  }
+
+  .app-header h1 {
+    font-size: 20px;
+  }
+
+  .main-container {
+    flex-direction: column;
+  }
+
+  .article-panel {
+    flex: 0 0 45%;
+  }
+}

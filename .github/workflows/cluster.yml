@@ -1,0 +1,40 @@
+name: News Clustering
+
+on:
+  # Triggered programmatically by ingest.yml after successful ingestion
+  workflow_dispatch:
+
+jobs:
+  cluster:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180  # 3 hour max (embedding + UMAP + clustering is heavy)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: cron/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          cd cron
+          pip install -r requirements.txt
+
+      - name: Run clustering script
+        env:
+          # ENV VARIABLE MUSH — set these in GitHub repo Settings → Secrets → Actions
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Ollama is not available in GitHub Actions — clustering will use
+          # the keyword fallback labeller instead. To use Ollama, you would
+          # need a self-hosted runner or a cloud Ollama endpoint.
+          # OLLAMA_URL: ${{ secrets.OLLAMA_URL }}
+        run: |
+          cd cron
+          python news_clustering.py
