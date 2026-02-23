@@ -64,26 +64,26 @@ EMBED_CONTENT_LENGTH = 800
 
 # ── UMAP settings ─────────────────────────────────────────────────────────────
 UMAP_N_COMPONENTS = 3
-UMAP_N_NEIGHBORS = 12
-UMAP_MIN_DIST = 0.01
-UMAP_SPREAD = 0.8
+UMAP_N_NEIGHBORS = 15      # higher = better global structure
+UMAP_MIN_DIST = 0.15       # was 0.01 — pushes points apart within clusters
+UMAP_SPREAD = 2.5          # was 0.8 — stretches clusters across more 3D volume
 UMAP_RANDOM_STATE = 42
 
 # ── DBSCAN settings ───────────────────────────────────────────────────────────
-DBSCAN_INITIAL_EPS = 0.28
-DBSCAN_INITIAL_MIN_SAMPLES = 10
+DBSCAN_INITIAL_EPS = 0.22          # was 0.28 — tighter = fewer cross-topic merges
+DBSCAN_INITIAL_MIN_SAMPLES = 8     # was 10 — allows slightly smaller tight clusters
 
 # ── Hierarchical splitting ─────────────────────────────────────────────────────
-MAX_CLUSTER_SIZE_SOFT = 150
-MAX_CLUSTER_SIZE_HARD = 200
-MIN_CLUSTER_SIZE_FINAL = 10
-SUBCLUSTER_EPS = 0.18
-SUBCLUSTER_MIN_SAMPLES = 6
+MAX_CLUSTER_SIZE_SOFT = 100        # was 150 — split sooner before clusters get mixed
+MAX_CLUSTER_SIZE_HARD = 150        # was 200 — hard cap tighter
+MIN_CLUSTER_SIZE_FINAL = 8         # was 10 — allow slightly smaller pure clusters
+SUBCLUSTER_EPS = 0.15              # was 0.18 — tighter subclustering
+SUBCLUSTER_MIN_SAMPLES = 5         # was 6
 SUBCLUSTER_CONTENT_LENGTH = 1200
 
 # ── Visual exaggeration ────────────────────────────────────────────────────────
-PULL_FACTOR = 0.06
-PUSH_FACTOR = 0.10
+PULL_FACTOR = 0.35       # was 0.06 — pull cluster members tighter inward
+PUSH_FACTOR = 0.45       # was 0.10 — push noise and cluster centers apart more
 
 # ── Outlier compression ────────────────────────────────────────────────────────
 OUTLIER_COMPRESS_THRESHOLD_MULTIPLIER = 2.0
@@ -150,10 +150,13 @@ def _label_cluster_groq(titles: list) -> str:
                         "role": "system",
                         "content": (
                             "You are a senior news editor. Your only job is to read "
-                            "a list of headlines and output a 2-4 word topic label. "
-                            "Reply with ONLY the topic words. No punctuation, no "
-                            "explanation, no sentences. Examples of correct output: "
-                            "Gaza Aid Crisis | US Election Results | Tech Industry Layoffs"
+                            "a list of headlines and output ONE single topic label of 3 to 5 words. "
+                            "Rules: reply with the topic words only, no punctuation, no explanation, "
+                            "no sentences, no pipe characters, no slashes, no alternatives. "
+                            "Output exactly one label. "
+                            "Good examples: Gaza Ceasefire Talks, Federal Reserve Rate Decision, "
+                            "Silicon Valley Tech Layoffs, Ukraine War Frontlines, "
+                            "US Immigration Border Policy"
                         ),
                     },
                     {
@@ -163,7 +166,7 @@ def _label_cluster_groq(titles: list) -> str:
                 ],
                 "temperature": 0.1,
                 "max_tokens": 20,
-                "stop": ["\n", ","],
+                "stop": ["\n", ",", "|", "/", " or ", " and "],  # prevent multi-topic output
             },
             timeout=GROQ_TIMEOUT,
         )
