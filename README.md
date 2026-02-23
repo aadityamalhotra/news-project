@@ -4,7 +4,7 @@
 
 Every night at 12:10 AM, articles are pulled from 20 international sources, embedded into semantic space, clustered by topic using ML, labeled by an LLM, and served to a live 3D visualization — with zero manual steps.
 
-🔗 **[Live Demo](https://your-vercel-url.vercel.app)** &nbsp;|&nbsp; 🔗 **[API](https://your-render-url.onrender.com)**
+🔗 **[Live Demo](https://news-project-blush.vercel.app/)** &nbsp;|&nbsp; 🔗 **[API](https://news-backend-uyix.onrender.com)**
 
 ---
 
