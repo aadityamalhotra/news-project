@@ -1,20 +1,13 @@
-name: Daily News Ingestion
+name: Data Cleaning
 
 on:
-  # 12:10 AM Madison time (America/Chicago)
-  # CST (winter) = UTC-6  → 06:10 UTC
-  # CDT (summer) = UTC-5  → 05:10 UTC
-  # GitHub Actions cron runs in UTC, so this is set for CST (winter).
-  # Update to '10 5 * * *' in March when daylight saving kicks in.
-  schedule:
-    - cron: '10 6 * * *'
-  # Allow manual triggering from the GitHub Actions UI
+  # Triggered programmatically by ingest.yml after successful ingestion
   workflow_dispatch:
 
 jobs:
-  ingest:
+  clean:
     runs-on: ubuntu-latest
-    timeout-minutes: 360  # 6 hour max (scraping 20 sources takes time)
+    timeout-minutes: 15  # Cleaning is just SQL queries, should finish in under a minute
 
     steps:
       - name: Checkout repository
@@ -32,16 +25,15 @@ jobs:
           cd cron
           pip install -r requirements.txt
 
-      - name: Run ingestion script
+      - name: Run cleaning script
         env:
-          # ENV VARIABLE MUSH — set these in GitHub repo Settings → Secrets → Actions
-          NEWSROOM_API_KEY: ${{ secrets.NEWSROOM_API_KEY }}
+          # ENV VARIABLE MUSH — set in GitHub repo Settings → Secrets → Actions
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           cd cron
-          python daily_reader.py
+          python data_cleaner.py
 
-      - name: Trigger cleaning workflow
+      - name: Trigger clustering workflow
         if: success()
         uses: actions/github-script@v7
         with:
@@ -49,6 +41,6 @@ jobs:
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              workflow_id: 'clean.yml',
+              workflow_id: 'cluster.yml',
               ref: 'main'
             });
