@@ -32,7 +32,7 @@ app = FastAPI()
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ENV VARIABLE MUSH
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000", "https://news-project-aadityamalhotras-projects.vercel.app").split(",")
 
 app.add_middleware(
     CORSMiddleware,
