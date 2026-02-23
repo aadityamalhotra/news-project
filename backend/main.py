@@ -118,7 +118,7 @@ def _load_cache(date_str: str) -> dict:
 # ─────────────────────────────────────────────────────────────────────────────
 # API ENDPOINTS
 # ─────────────────────────────────────────────────────────────────────────────
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {"message": "News Visualization API", "status": "running"}
 
