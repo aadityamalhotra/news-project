@@ -17,7 +17,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy import create_engine, text
-
+from zoneinfo import ZoneInfo
 # CONNECTION MUSH
 from supabase import create_client, Client
 
@@ -160,7 +160,7 @@ async def load_visualization(date: Optional[str] = None) -> VisualizationRespons
         except ValueError:
             raise HTTPException(status_code=400, detail="Date must be in YYYY-MM-DD format")
     else:
-        target_date_str = str((datetime.now() - timedelta(days=1)).date())
+        target_date_str = str((datetime.now(ZoneInfo("America/Chicago")) - timedelta(days=1)).date())
 
     print(f"Loading cache for {target_date_str}...")
     data = _load_cache(target_date_str)
