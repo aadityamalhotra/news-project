@@ -65,7 +65,7 @@ EMBED_CONTENT_LENGTH = 800
 # ── UMAP settings ─────────────────────────────────────────────────────────────
 UMAP_N_COMPONENTS = 3
 UMAP_N_NEIGHBORS = 6      # higher = better global structure
-UMAP_MIN_DIST = 0.15       # breathing room between points within a cluster
+UMAP_MIN_DIST = 0.10       # breathing room between points within a cluster
 UMAP_SPREAD = 2.5          # wide spread — purely visual, does NOT affect clustering
 UMAP_RANDOM_STATE = 42
 
