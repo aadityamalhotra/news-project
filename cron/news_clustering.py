@@ -65,20 +65,24 @@ EMBED_CONTENT_LENGTH = 800
 # ── UMAP settings ─────────────────────────────────────────────────────────────
 UMAP_N_COMPONENTS = 3
 UMAP_N_NEIGHBORS = 15      # higher = better global structure
-UMAP_MIN_DIST = 0.15       # was 0.01 — pushes points apart within clusters
-UMAP_SPREAD = 2.5          # was 0.8 — stretches clusters across more 3D volume
+UMAP_MIN_DIST = 0.15       # breathing room between points within a cluster
+UMAP_SPREAD = 2.5          # wide spread — purely visual, does NOT affect clustering
 UMAP_RANDOM_STATE = 42
 
 # ── DBSCAN settings ───────────────────────────────────────────────────────────
-DBSCAN_INITIAL_EPS = 0.22          # was 0.28 — tighter = fewer cross-topic merges
-DBSCAN_INITIAL_MIN_SAMPLES = 8     # was 10 — allows slightly smaller tight clusters
+# IMPORTANT: DBSCAN now runs on the raw 768-dim embeddings (cosine metric),
+# NOT on the 3D UMAP projections. This decouples visual spread from clustering.
+# Cosine distance ranges 0–1, so eps is a semantic similarity threshold:
+#   eps=0.25 means "articles within 25% cosine distance are neighbours"
+DBSCAN_INITIAL_EPS = 0.25          # cosine distance threshold on raw embeddings
+DBSCAN_INITIAL_MIN_SAMPLES = 8     # min articles to form a core cluster point
 
 # ── Hierarchical splitting ─────────────────────────────────────────────────────
-MAX_CLUSTER_SIZE_SOFT = 100        # was 150 — split sooner before clusters get mixed
-MAX_CLUSTER_SIZE_HARD = 150        # was 200 — hard cap tighter
-MIN_CLUSTER_SIZE_FINAL = 8         # was 10 — allow slightly smaller pure clusters
-SUBCLUSTER_EPS = 0.15              # was 0.18 — tighter subclustering
-SUBCLUSTER_MIN_SAMPLES = 5         # was 6
+MAX_CLUSTER_SIZE_SOFT = 100        # split sooner before clusters get mixed
+MAX_CLUSTER_SIZE_HARD = 150        # absolute hard cap
+MIN_CLUSTER_SIZE_FINAL = 8         # minimum cluster size after all splits
+SUBCLUSTER_EPS = 0.18              # tighter eps for subclustering large groups
+SUBCLUSTER_MIN_SAMPLES = 5
 SUBCLUSTER_CONTENT_LENGTH = 1200
 
 # ── Visual exaggeration ────────────────────────────────────────────────────────
@@ -442,13 +446,14 @@ def build_cluster_cache():
     projections = compressed
 
     # ── DBSCAN ────────────────────────────────────────────────────────────────
-    print(f"\nDBSCAN clustering (eps={DBSCAN_INITIAL_EPS}, min_samples={DBSCAN_INITIAL_MIN_SAMPLES})...")
+    print(f"\nDBSCAN clustering on raw embeddings (eps={DBSCAN_INITIAL_EPS}, min_samples={DBSCAN_INITIAL_MIN_SAMPLES})...")
+    print("  Running on 768-dim embeddings with cosine metric — decoupled from visual spread")
     clusterer = DBSCAN(
         eps=DBSCAN_INITIAL_EPS,
         min_samples=DBSCAN_INITIAL_MIN_SAMPLES,
-        metric='euclidean',
+        metric='cosine',       # semantic distance, not euclidean 3D distance
     )
-    labels = clusterer.fit_predict(projections)
+    labels = clusterer.fit_predict(embeddings)  # embeddings, NOT projections
     df["cluster_id"] = labels
 
     n_clusters = int((labels != -1).any() and labels[labels != -1].max() + 1)
