@@ -13,18 +13,104 @@ PIPELINE:
   1. Read yesterday's articles from the database
   2. Generate sentence embeddings with all-mpnet-base-v2 (768-dim)
   3. Reduce to 3D with UMAP for visualization
-  4. Initial clustering with tight DBSCAN (eps=0.28)
-  5. Hierarchical splitting: recursively split oversized clusters (>150-200 articles)
-  6. Apply visual exaggeration for cleaner 3D separation
-  7. Label each cluster with Groq / llama-3.1-8b-instant (single-topic, strict prompt)
-  8. Score each article's semantic relevance to its cluster name
-  9. Upload result to Supabase Storage as <YYYY-MM-DD>.json
+  4. Outlier compression (aesthetic)
+  5. DBSCAN clustering on the 3D UMAP coordinates (euclidean)
+     → clusters what you SEE, so visual groups = real clusters
+  6. Hierarchical splitting: recursively split oversized clusters
+  7. Visual exaggeration for cleaner separation
+  8. Label each cluster with Groq / llama-3.1-8b-instant
+  9. Score each article's semantic relevance to its cluster name
+  10. Upload result to Supabase Storage as <YYYY-MM-DD>.json
 
 GROQ SETUP:
   - Sign up free at console.groq.com
   - Create an API key
-  - Add it as GROQ_API_KEY in GitHub Actions secrets (and Render env vars if needed)
+  - Add it as GROQ_API_KEY in GitHub Actions secrets
   - Free tier: 14,400 requests/day, more than enough for daily clustering
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+TUNING GUIDE — every parameter you can adjust and what it does
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+UMAP_N_NEIGHBORS (default: 8)
+  Controls how many nearby points UMAP considers when learning the layout.
+  ↑ increase → more global structure, clusters spread further apart, smoother layout
+  ↓ decrease → more local structure, tighter local groups, more fragmented layout
+  Practical range: 5–30. Below 5 gets noisy. Above 20 loses local detail.
+
+UMAP_MIN_DIST (default: 0.05)
+  Controls how tightly points are packed within a cluster in the 3D projection.
+  ↑ increase → points spread out within clusters, more open/airy look
+  ↓ decrease → points compress into tight dense blobs, DBSCAN finds them more easily
+  Practical range: 0.01–0.3. Lower = more clusters detected. Higher = prettier but fewer clusters.
+
+UMAP_SPREAD (default: 2.5)
+  Controls the overall scale of the 3D space — how far apart clusters sit from each other.
+  ↑ increase → more 3D volume used, clusters more separated visually
+  ↓ decrease → everything compresses toward the center
+  NOTE: Also affects DBSCAN since clustering is now on 3D coords. If you raise spread,
+  you must also raise DBSCAN_INITIAL_EPS proportionally.
+  Practical range: 1.0–4.0.
+
+DBSCAN_INITIAL_EPS (default: 0.8)
+  The neighbourhood radius in 3D UMAP space. Two points are neighbours if their
+  euclidean 3D distance is less than eps. THIS IS THE MOST IMPORTANT PARAMETER.
+  ↑ increase → larger neighbourhoods, fewer but larger clusters, more points clustered
+  ↓ decrease → smaller neighbourhoods, more clusters, more grey noise points
+  Practical range: 0.3–2.0 when UMAP_SPREAD=2.5.
+  Rule of thumb: if you see too many grey points → increase eps.
+                 If clusters are merging topics that don't belong → decrease eps.
+
+DBSCAN_INITIAL_MIN_SAMPLES (default: 8)
+  Minimum number of points required to form a cluster core.
+  ↑ increase → only denser groups become clusters, more grey noise
+  ↓ decrease → smaller groups qualify as clusters, fewer grey points
+  Practical range: 4–15. This is the second most impactful parameter after eps.
+
+MAX_CLUSTER_SIZE_SOFT (default: 100)
+  Clusters above this size are attempted to be split if natural sub-topics exist.
+  ↑ increase → fewer splits attempted, larger clusters allowed
+  ↓ decrease → more aggressive splitting, more final clusters
+
+MAX_CLUSTER_SIZE_HARD (default: 150)
+  Clusters above this are ALWAYS force-split regardless of sub-topic quality.
+  ↑ increase → very large mixed clusters can survive
+  ↓ decrease → hard cap enforced more strictly
+
+MIN_CLUSTER_SIZE_FINAL (default: 8)
+  After splitting, sub-clusters smaller than this are dissolved back to noise.
+  ↑ increase → only larger sub-clusters survive splitting
+  ↓ decrease → smaller sub-clusters survive, more final clusters from splitting
+
+SUBCLUSTER_EPS (default: 0.5)
+  The eps used when re-clustering inside an oversized cluster.
+  Should be somewhat smaller than DBSCAN_INITIAL_EPS so it finds tighter sub-groups.
+  ↑ increase → looser sub-clustering, fewer sub-clusters found
+  ↓ decrease → tighter sub-clustering, more sub-clusters found
+
+SUBCLUSTER_MIN_SAMPLES (default: 4)
+  Min samples for sub-cluster cores. Lower than DBSCAN_INITIAL_MIN_SAMPLES intentionally.
+  ↑ increase → sub-clusters must be denser to survive
+  ↓ decrease → smaller sub-clusters survive
+
+PULL_FACTOR (default: 0.35)
+  Post-clustering visual tweak. Pulls each point toward its cluster centroid.
+  ↑ increase → cluster members bunch tighter together visually (up to 1.0 = all collapse to center)
+  ↓ decrease → cluster members stay where UMAP placed them
+  Does NOT affect which points belong to which cluster.
+
+PUSH_FACTOR (default: 0.45)
+  Post-clustering visual tweak. Pushes grey noise points away from nearest cluster.
+  ↑ increase → noise points scatter further from clusters
+  ↓ decrease → noise points stay closer to clusters
+  Does NOT affect which points are noise.
+
+EMBED_CONTENT_LENGTH (default: 800)
+  Characters of article body text appended to the title for embedding.
+  ↑ increase → richer embeddings, better semantic distinction between articles
+  ↓ decrease → faster embedding, more title-driven clustering
+  Practical range: 400–1500.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 """
 
 import colorsys
@@ -50,51 +136,50 @@ from supabase import create_client
 # ──────────────────────────────────────────────────────────────────────────────
 LOCAL_TZ = "America/Chicago"
 
-# Groq API — free LLM inference, replaces local Ollama
-# Sign up at console.groq.com, create an API key, add as GROQ_API_KEY secret
+# Groq API — free LLM inference
 # ENV VARIABLE MUSH
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROQ_MODEL = "llama-3.1-8b-instant"   # free, fast, high quality
+GROQ_MODEL = "llama-3.1-8b-instant"
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_TIMEOUT = 30
 
 # ── EMBEDDING MODEL ────────────────────────────────────────────────────────────
 EMBEDDING_MODEL = "all-mpnet-base-v2"
-EMBED_CONTENT_LENGTH = 1500
+EMBED_CONTENT_LENGTH = 800        # see tuning guide above
 
 # ── UMAP settings ─────────────────────────────────────────────────────────────
+# NOTE: DBSCAN runs on the 3D UMAP output, so UMAP and DBSCAN parameters
+# are coupled. If you change UMAP_SPREAD, adjust DBSCAN_INITIAL_EPS too.
 UMAP_N_COMPONENTS = 3
-UMAP_N_NEIGHBORS = 6      # higher = better global structure
-UMAP_MIN_DIST = 0.05       # breathing room between points within a cluster
-UMAP_SPREAD = 2.5          # wide spread — purely visual, does NOT affect clustering
+UMAP_N_NEIGHBORS = 8              # see tuning guide above
+UMAP_MIN_DIST = 0.05              # low = tight blobs = easier for DBSCAN to find
+UMAP_SPREAD = 2.5                 # see tuning guide above
 UMAP_RANDOM_STATE = 42
 
 # ── DBSCAN settings ───────────────────────────────────────────────────────────
-# IMPORTANT: DBSCAN now runs on the raw 768-dim embeddings (cosine metric),
-# NOT on the 3D UMAP projections. This decouples visual spread from clustering.
-# Cosine distance ranges 0–1, so eps is a semantic similarity threshold:
-#   eps=0.25 means "articles within 25% cosine distance are neighbours"
-DBSCAN_INITIAL_EPS = 0.3         # cosine distance threshold on raw embeddings
-DBSCAN_INITIAL_MIN_SAMPLES = 6     # min articles to form a core cluster point
+# Runs on 3D UMAP coordinates (euclidean distance).
+# This means visual groups = real clusters — what you see is what gets clustered.
+# eps is in the same units as the 3D UMAP space (scaled by UMAP_SPREAD).
+DBSCAN_INITIAL_EPS = 0.8          # see tuning guide above — START HERE when tuning
+DBSCAN_INITIAL_MIN_SAMPLES = 8    # see tuning guide above
 
 # ── Hierarchical splitting ─────────────────────────────────────────────────────
-MAX_CLUSTER_SIZE_SOFT = 60        # split sooner before clusters get mixed
-MAX_CLUSTER_SIZE_HARD = 100        # absolute hard cap
-MIN_CLUSTER_SIZE_FINAL = 8         # minimum cluster size after all splits
-SUBCLUSTER_EPS = 0.14              # tighter eps for subclustering large groups
-SUBCLUSTER_MIN_SAMPLES = 4
+MAX_CLUSTER_SIZE_SOFT = 100       # see tuning guide above
+MAX_CLUSTER_SIZE_HARD = 150       # see tuning guide above
+MIN_CLUSTER_SIZE_FINAL = 8        # see tuning guide above
+SUBCLUSTER_EPS = 0.5              # see tuning guide above — kept proportional to DBSCAN_INITIAL_EPS
+SUBCLUSTER_MIN_SAMPLES = 4        # see tuning guide above
 SUBCLUSTER_CONTENT_LENGTH = 1200
 
-# ── Visual exaggeration ────────────────────────────────────────────────────────
-PULL_FACTOR = 0.50       # was 0.06 — pull cluster members tighter inward
-PUSH_FACTOR = 0.45       # was 0.10 — push noise and cluster centers apart more
+# ── Visual exaggeration (post-clustering only, does not affect cluster assignments) ──
+PULL_FACTOR = 0.35                # see tuning guide above
+PUSH_FACTOR = 0.45                # see tuning guide above
 
 # ── Outlier compression ────────────────────────────────────────────────────────
 OUTLIER_COMPRESS_THRESHOLD_MULTIPLIER = 2.0
 OUTLIER_LOG_SCALE = 0.5
 
 # ── Supabase Storage bucket name ───────────────────────────────────────────────
-# Create a bucket named "cluster-cache" in your Supabase Storage dashboard.
 SUPABASE_BUCKET = "cluster-cache"
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -126,11 +211,8 @@ def _cluster_colors(n: int) -> list:
 # ──────────────────────────────────────────────────────────────────────────────
 def _label_cluster_groq(titles: list) -> str:
     """
-    Ask Groq (free LLM API) for a 2-4 word topic label for a cluster.
-    Falls back to keyword extraction if Groq is unavailable or key is missing.
-
-    Groq uses the OpenAI-compatible chat completions API format.
-    Model: llama-3.1-8b-instant (free, ~500 tokens/sec)
+    Ask Groq for a 3-5 word topic label. Falls back to keyword extraction
+    if Groq is unavailable or the API key is missing.
     """
     if not GROQ_API_KEY:
         print("  ⚠ GROQ_API_KEY not set — using keyword fallback")
@@ -165,12 +247,12 @@ def _label_cluster_groq(titles: list) -> str:
                     },
                     {
                         "role": "user",
-                        "content": f"Headlines:\n{titles_text}\n\nTOPIC (2-4 words only):",
+                        "content": f"Headlines:\n{titles_text}\n\nTOPIC (3-5 words only):",
                     },
                 ],
                 "temperature": 0.1,
                 "max_tokens": 20,
-                "stop": ["\n", ",", "|", "/", " or ", " and "],  # prevent multi-topic output
+                "stop": ["\n", ",", "|", "/", " or ", " and "],
             },
             timeout=GROQ_TIMEOUT,
         )
@@ -178,7 +260,6 @@ def _label_cluster_groq(titles: list) -> str:
         if resp.status_code == 200:
             raw = resp.json()["choices"][0]["message"]["content"].strip()
 
-            # Strip any preamble the model snuck in
             for prefix in [
                 "Topic:", "Topic name:", "The topic is", "Based on",
                 "ONE TOPIC:", "Main topic:", "Answer:", "Label:",
@@ -278,7 +359,11 @@ def _split_oversized_clusters(df, embeddings, model, iteration=1):
         print(f"{'  ' * iteration}    Re-embedding {len(cluster_df)} articles...")
         sub_embeddings = model.encode(rich_text.tolist(), show_progress_bar=False)
 
-        sub_clusterer = DBSCAN(eps=SUBCLUSTER_EPS, min_samples=SUBCLUSTER_MIN_SAMPLES)
+        sub_clusterer = DBSCAN(
+            eps=SUBCLUSTER_EPS,
+            min_samples=SUBCLUSTER_MIN_SAMPLES,
+            metric='cosine',
+        )
         sub_labels = sub_clusterer.fit_predict(sub_embeddings)
 
         n_subclusters = len([lbl for lbl in np.unique(sub_labels) if lbl != -1])
@@ -305,7 +390,11 @@ def _split_oversized_clusters(df, embeddings, model, iteration=1):
         )
         sub_embeddings = model.encode(rich_text.tolist(), show_progress_bar=False)
 
-        sub_clusterer = DBSCAN(eps=SUBCLUSTER_EPS * 1.2, min_samples=SUBCLUSTER_MIN_SAMPLES)
+        sub_clusterer = DBSCAN(
+            eps=SUBCLUSTER_EPS * 1.2,
+            min_samples=SUBCLUSTER_MIN_SAMPLES,
+            metric='cosine',
+        )
         sub_labels = sub_clusterer.fit_predict(sub_embeddings)
 
         n_subclusters = len([lbl for lbl in np.unique(sub_labels) if lbl != -1])
@@ -421,6 +510,7 @@ def build_cluster_cache():
 
     # ── UMAP ──────────────────────────────────────────────────────────────────
     print("Running UMAP...")
+    print(f"  n_neighbors={UMAP_N_NEIGHBORS}, min_dist={UMAP_MIN_DIST}, spread={UMAP_SPREAD}")
     reducer = umap.UMAP(
         n_components=UMAP_N_COMPONENTS,
         n_neighbors=UMAP_N_NEIGHBORS,
@@ -445,15 +535,19 @@ def build_cluster_cache():
             compressed[i] = center + direction * factor
     projections = compressed
 
-    # ── DBSCAN ────────────────────────────────────────────────────────────────
-    print(f"\nDBSCAN clustering on raw embeddings (eps={DBSCAN_INITIAL_EPS}, min_samples={DBSCAN_INITIAL_MIN_SAMPLES})...")
-    print("  Running on 768-dim embeddings with cosine metric — decoupled from visual spread")
+    # ── DBSCAN on 3D UMAP coordinates ─────────────────────────────────────────
+    # Clustering on the 3D projection means visual groups = real clusters.
+    # If you see a group of points close together, they will be clustered together.
+    # eps is in euclidean 3D space — tune it alongside UMAP_SPREAD.
+    print(f"\nDBSCAN clustering on 3D UMAP coordinates...")
+    print(f"  eps={DBSCAN_INITIAL_EPS}, min_samples={DBSCAN_INITIAL_MIN_SAMPLES}, metric=euclidean")
+    print(f"  (visual groups = real clusters — what you see is what gets clustered)")
     clusterer = DBSCAN(
         eps=DBSCAN_INITIAL_EPS,
         min_samples=DBSCAN_INITIAL_MIN_SAMPLES,
-        metric='cosine',       # semantic distance, not euclidean 3D distance
+        metric='euclidean',
     )
-    labels = clusterer.fit_predict(embeddings)  # embeddings, NOT projections
+    labels = clusterer.fit_predict(projections)  # projections = 3D UMAP output
     df["cluster_id"] = labels
 
     n_clusters = int((labels != -1).any() and labels[labels != -1].max() + 1)
@@ -548,10 +642,10 @@ def build_cluster_cache():
                 "spread": UMAP_SPREAD,
                 "metric": "cosine",
             },
-            # Fixed: was referencing undefined DBSCAN_EPS / DBSCAN_MIN_SAMPLES
             "dbscan_params": {
                 "initial_eps": DBSCAN_INITIAL_EPS,
                 "initial_min_samples": DBSCAN_INITIAL_MIN_SAMPLES,
+                "metric": "euclidean_on_3d_umap",
                 "subcluster_eps": SUBCLUSTER_EPS,
                 "subcluster_min_samples": SUBCLUSTER_MIN_SAMPLES,
             },
@@ -567,7 +661,6 @@ def build_cluster_cache():
     # CONNECTION MUSH
     supabase_client = create_client(supabase_url, supabase_key)
 
-    # Try to remove existing file first (upsert-style — Supabase Storage doesn't support true upsert)
     try:
         supabase_client.storage.from_(SUPABASE_BUCKET).remove([output_filename])
     except Exception:
