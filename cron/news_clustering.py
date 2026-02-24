@@ -197,13 +197,21 @@ BASE_COLORS = [
 
 
 def _cluster_colors(n: int) -> list:
-    colors = BASE_COLORS.copy()
-    while len(colors) < n:
-        idx = len(colors) - len(BASE_COLORS)
-        hue = (idx * 0.618033988749895) % 1.0
-        r, g, b = colorsys.hsv_to_rgb(hue, 0.72, 0.88)
+    colors = []
+    # Use the Golden Ratio to spread hues evenly
+    phi = 0.618033988749895
+    hue = 0.5  # Starting point
+    
+    for i in range(n):
+        hue = (hue + phi) % 1.0
+        # Vary saturation and value slightly for more "texture"
+        # Alternate saturation between 0.5 and 0.8 to distinguish neighbors
+        saturation = 0.6 + (i % 2) * 0.2 
+        value = 0.85 + (i % 3) * 0.05
+        
+        r, g, b = colorsys.hsv_to_rgb(hue, saturation, value)
         colors.append(f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}")
-    return colors[:n]
+    return colors
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -531,7 +539,7 @@ def build_cluster_cache():
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-    target_date = pendulum.now(LOCAL_TZ).subtract(days=1).date()
+    target_date = pendulum.now(LOCAL_TZ).subtract(days=2).date()
     date_str = str(target_date)
     output_filename = f"{date_str}.json"
 
