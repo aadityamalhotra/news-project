@@ -161,7 +161,7 @@ UMAP_RANDOM_STATE = 42
 # This means visual groups = real clusters — what you see is what gets clustered.
 # eps is in the same units as the 3D UMAP space (scaled by UMAP_SPREAD).
 DBSCAN_INITIAL_EPS = 0.8          # see tuning guide above — START HERE when tuning
-DBSCAN_INITIAL_MIN_SAMPLES = 8    # see tuning guide above
+DBSCAN_INITIAL_MIN_SAMPLES = 15    # see tuning guide above
 
 # ── Hierarchical splitting ─────────────────────────────────────────────────────
 MAX_CLUSTER_SIZE_SOFT = 80       # see tuning guide above
