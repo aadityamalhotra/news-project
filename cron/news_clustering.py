@@ -60,11 +60,11 @@ GROQ_TIMEOUT = 30
 
 # ── EMBEDDING MODEL ────────────────────────────────────────────────────────────
 EMBEDDING_MODEL = "all-mpnet-base-v2"
-EMBED_CONTENT_LENGTH = 800
+EMBED_CONTENT_LENGTH = 1500
 
 # ── UMAP settings ─────────────────────────────────────────────────────────────
 UMAP_N_COMPONENTS = 3
-UMAP_N_NEIGHBORS = 4      # higher = better global structure
+UMAP_N_NEIGHBORS = 5      # higher = better global structure
 UMAP_MIN_DIST = 0.10       # breathing room between points within a cluster
 UMAP_SPREAD = 2.5          # wide spread — purely visual, does NOT affect clustering
 UMAP_RANDOM_STATE = 42
@@ -75,7 +75,7 @@ UMAP_RANDOM_STATE = 42
 # Cosine distance ranges 0–1, so eps is a semantic similarity threshold:
 #   eps=0.25 means "articles within 25% cosine distance are neighbours"
 DBSCAN_INITIAL_EPS = 0.40          # cosine distance threshold on raw embeddings
-DBSCAN_INITIAL_MIN_SAMPLES = 8     # min articles to form a core cluster point
+DBSCAN_INITIAL_MIN_SAMPLES = 6     # min articles to form a core cluster point
 
 # ── Hierarchical splitting ─────────────────────────────────────────────────────
 MAX_CLUSTER_SIZE_SOFT = 100        # split sooner before clusters get mixed
