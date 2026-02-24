@@ -209,78 +209,134 @@ def _cluster_colors(n: int) -> list:
 # ──────────────────────────────────────────────────────────────────────────────
 # GROQ LABELLING
 # ──────────────────────────────────────────────────────────────────────────────
-def _label_cluster_groq(titles: list) -> str:
+def _label_cluster_groq(titles: list, embeddings_subset: np.ndarray = None) -> str:
     """
-    Ask Groq for a 3-5 word topic label. Falls back to keyword extraction
-    if Groq is unavailable or the API key is missing.
+    Ask Groq for a specific 3-5 word topic label.
+
+    Improvements over naive approach:
+    - Passes up to 40 titles (was 20) for more context
+    - Selects the most central/representative titles using embedding similarity
+      to the cluster centroid, so Groq sees the best signal not a random sample
+    - Retries up to 3 times with exponential backoff on rate limit (429) errors
+    - Prompt explicitly instructs country/person/event naming
+    - Falls back to keyword extraction only after all retries exhausted
     """
+    import time
+
     if not GROQ_API_KEY:
         print("  ⚠ GROQ_API_KEY not set — using keyword fallback")
         return _label_cluster_fallback(titles)
 
-    sample = random.sample(titles, min(20, len(titles)))
-    titles_text = "\n".join(f"- {t}" for t in sample)
-
-    try:
-        resp = requests.post(
-            GROQ_API_URL,
-            headers={
-                # CONNECTION MUSH
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": GROQ_MODEL,
-                "messages": [
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a senior news editor. Your only job is to read "
-                            "a list of headlines and output ONE single topic label of 3 to 5 words. "
-                            "Rules: reply with the topic words only, no punctuation, no explanation, "
-                            "no sentences, no pipe characters, no slashes, no alternatives. "
-                            "Output exactly one label. "
-                            "Good examples: Gaza Ceasefire Talks, Federal Reserve Rate Decision, "
-                            "Silicon Valley Tech Layoffs, Ukraine War Frontlines, "
-                            "US Immigration Border Policy"
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Headlines:\n{titles_text}\n\nTOPIC (3-5 words only):",
-                    },
-                ],
-                "temperature": 0.1,
-                "max_tokens": 20,
-                "stop": ["\n", ",", "|", "/", " or ", " and "],
-            },
-            timeout=GROQ_TIMEOUT,
+    # Select the most representative titles — those closest to the cluster centroid
+    # This gives Groq the clearest signal about what the cluster is actually about
+    if embeddings_subset is not None and len(embeddings_subset) == len(titles):
+        centroid = embeddings_subset.mean(axis=0)
+        sims = embeddings_subset @ centroid / (
+            np.linalg.norm(embeddings_subset, axis=1) * np.linalg.norm(centroid) + 1e-9
         )
+        top_indices = np.argsort(sims)[::-1][:40]
+        selected_titles = [titles[i] for i in top_indices]
+    else:
+        # Fallback: take up to 40 titles as-is (for smaller clusters, all titles)
+        selected_titles = titles[:40]
 
-        if resp.status_code == 200:
-            raw = resp.json()["choices"][0]["message"]["content"].strip()
+    titles_text = "\n".join(f"- {t}" for t in selected_titles)
 
-            for prefix in [
-                "Topic:", "Topic name:", "The topic is", "Based on",
-                "ONE TOPIC:", "Main topic:", "Answer:", "Label:",
-            ]:
-                if raw.lower().startswith(prefix.lower()):
-                    raw = raw[len(prefix):].strip().lstrip(":- ")
+    system_prompt = (
+        "You are a senior news editor at an international wire service. "
+        "Your job is to read a set of article headlines and write ONE precise topic label. "
+        "\n\nCritical rules:"
+        "\n- Output ONLY the label words. No explanation, no punctuation, no alternatives."
+        "\n- Use 3 to 5 words maximum."
+        "\n- Be SPECIFIC. Name the country, person, organization, or event if relevant."
+        "\n- If headlines mention a specific country, include it (e.g. 'Mexico Drug Cartel Violence' not 'Drug Violence')."
+        "\n- If headlines are about a named person, include their last name (e.g. 'Trump Immigration Executive Orders')."
+        "\n- If headlines cover a specific event, name it (e.g. 'NFL Combine Draft Prospects')."
+        "\n- Never output generic filler words like 'News', 'Update', 'Report', 'Latest'."
+        "\n\nGood label examples:"
+        "\n  Gaza Ceasefire Hostage Deal"
+        "\n  Federal Reserve Interest Rates"
+        "\n  Tesla Layoffs Musk Restructuring"
+        "\n  Ukraine Russia Frontline Fighting"
+        "\n  US Mexico Border Immigration"
+        "\n  NBA Trade Deadline Moves"
+        "\n  Israel Iran Military Strike"
+        "\n  UK Starmer Budget Spending"
+        "\n  Canada Trudeau Resignation Liberals"
+        "\n  Silicon Valley AI Startup Funding"
+    )
 
-            raw = raw.split("\n")[0].strip().strip("\"'.,;:")
-            raw = re.sub(r"^\d+\.\s*", "", raw)
-            raw = re.sub(r"^[-•*]\s*", "", raw)
-            raw = " ".join(raw.split()[:5])
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                GROQ_API_URL,
+                headers={
+                    # CONNECTION MUSH
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": GROQ_MODEL,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {
+                            "role": "user",
+                            "content": (
+                                f"Here are {len(selected_titles)} headlines from the same news cluster.\n"
+                                f"Headlines:\n{titles_text}\n\n"
+                                f"Write the topic label (3-5 words, specific, no punctuation):"
+                            ),
+                        },
+                    ],
+                    "temperature": 0.1,
+                    "max_tokens": 25,
+                    "stop": ["\n", "|"],   # Groq allows max 4 stop tokens
+                },
+                timeout=GROQ_TIMEOUT,
+            )
 
-            if len(raw) >= 3:
-                print(f"  ✓ Groq label: '{raw}'")
-                return raw
-        else:
-            print(f"  ✗ Groq HTTP {resp.status_code}: {resp.text[:200]}")
+            if resp.status_code == 200:
+                raw = resp.json()["choices"][0]["message"]["content"].strip()
 
-    except Exception as exc:
-        print(f"  ✗ Groq error: {exc} — falling back to keyword extraction")
+                # Strip any preamble the model snuck in
+                for prefix in [
+                    "Topic:", "Topic name:", "The topic is", "Based on",
+                    "ONE TOPIC:", "Main topic:", "Answer:", "Label:", "Here is",
+                    "The label", "Label:", "Category:",
+                ]:
+                    if raw.lower().startswith(prefix.lower()):
+                        raw = raw[len(prefix):].strip().lstrip(":- ")
 
+                raw = raw.split("\n")[0].strip().strip("\"'.,;:")
+                raw = re.sub(r"^\d+\.\s*", "", raw)
+                raw = re.sub(r"^[-•*]\s*", "", raw)
+                # Remove trailing filler words
+                raw = re.sub(r"\b(News|Update|Report|Latest|Coverage)$", "", raw, flags=re.IGNORECASE).strip()
+                raw = " ".join(raw.split()[:5])
+
+                if len(raw) >= 3:
+                    print(f"  ✓ Groq label (attempt {attempt+1}): '{raw}'")
+                    return raw
+
+                print(f"  ⚠ Groq returned too-short label '{raw}' on attempt {attempt+1}, retrying...")
+
+            elif resp.status_code == 429:
+                # Rate limited — wait with exponential backoff
+                wait = (2 ** attempt) * 3
+                print(f"  ⚠ Groq rate limited (429), waiting {wait}s before retry...")
+                time.sleep(wait)
+                continue
+
+            else:
+                print(f"  ✗ Groq HTTP {resp.status_code}: {resp.text[:200]}")
+                break
+
+        except Exception as exc:
+            print(f"  ✗ Groq error on attempt {attempt+1}: {exc}")
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+
+    print("  ✗ All Groq attempts failed — falling back to keyword extraction")
     return _label_cluster_fallback(titles)
 
 
@@ -581,7 +637,11 @@ def build_cluster_cache():
             color = "#808080"
         else:
             print(f"\n  Cluster {cluster_id} ({len(titles)} articles):")
-            cluster_name = _label_cluster_groq(titles)
+            # Pass the raw embeddings for this cluster so Groq receives the most
+            # representative titles (closest to centroid) rather than a random sample
+            cluster_indices = cluster_df.index.tolist()
+            cluster_embeddings = embeddings[cluster_indices]
+            cluster_name = _label_cluster_groq(titles, embeddings_subset=cluster_embeddings)
             color = palette[int(cluster_id) % len(palette)]
 
         relevance_map = {
