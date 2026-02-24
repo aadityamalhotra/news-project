@@ -64,7 +64,7 @@ EMBED_CONTENT_LENGTH = 800
 
 # ── UMAP settings ─────────────────────────────────────────────────────────────
 UMAP_N_COMPONENTS = 3
-UMAP_N_NEIGHBORS = 6      # higher = better global structure
+UMAP_N_NEIGHBORS = 4      # higher = better global structure
 UMAP_MIN_DIST = 0.10       # breathing room between points within a cluster
 UMAP_SPREAD = 2.5          # wide spread — purely visual, does NOT affect clustering
 UMAP_RANDOM_STATE = 42
@@ -81,7 +81,7 @@ DBSCAN_INITIAL_MIN_SAMPLES = 8     # min articles to form a core cluster point
 MAX_CLUSTER_SIZE_SOFT = 100        # split sooner before clusters get mixed
 MAX_CLUSTER_SIZE_HARD = 150        # absolute hard cap
 MIN_CLUSTER_SIZE_FINAL = 8         # minimum cluster size after all splits
-SUBCLUSTER_EPS = 0.18              # tighter eps for subclustering large groups
+SUBCLUSTER_EPS = 0.15              # tighter eps for subclustering large groups
 SUBCLUSTER_MIN_SAMPLES = 5
 SUBCLUSTER_CONTENT_LENGTH = 1200
 
