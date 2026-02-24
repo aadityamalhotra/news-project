@@ -74,15 +74,15 @@ UMAP_RANDOM_STATE = 42
 # NOT on the 3D UMAP projections. This decouples visual spread from clustering.
 # Cosine distance ranges 0–1, so eps is a semantic similarity threshold:
 #   eps=0.25 means "articles within 25% cosine distance are neighbours"
-DBSCAN_INITIAL_EPS = 0.25         # cosine distance threshold on raw embeddings
-DBSCAN_INITIAL_MIN_SAMPLES = 4     # min articles to form a core cluster point
+DBSCAN_INITIAL_EPS = 0.3         # cosine distance threshold on raw embeddings
+DBSCAN_INITIAL_MIN_SAMPLES = 6     # min articles to form a core cluster point
 
 # ── Hierarchical splitting ─────────────────────────────────────────────────────
-MAX_CLUSTER_SIZE_SOFT = 80        # split sooner before clusters get mixed
-MAX_CLUSTER_SIZE_HARD = 150        # absolute hard cap
+MAX_CLUSTER_SIZE_SOFT = 60        # split sooner before clusters get mixed
+MAX_CLUSTER_SIZE_HARD = 100        # absolute hard cap
 MIN_CLUSTER_SIZE_FINAL = 8         # minimum cluster size after all splits
-SUBCLUSTER_EPS = 0.15              # tighter eps for subclustering large groups
-SUBCLUSTER_MIN_SAMPLES = 5
+SUBCLUSTER_EPS = 0.14              # tighter eps for subclustering large groups
+SUBCLUSTER_MIN_SAMPLES = 4
 SUBCLUSTER_CONTENT_LENGTH = 1200
 
 # ── Visual exaggeration ────────────────────────────────────────────────────────
