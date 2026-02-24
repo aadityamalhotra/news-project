@@ -539,7 +539,7 @@ def build_cluster_cache():
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-    target_date = pendulum.now(LOCAL_TZ).subtract(days=2).date()
+    target_date = pendulum.now(LOCAL_TZ).subtract(days=3).date()
     date_str = str(target_date)
     output_filename = f"{date_str}.json"
 
