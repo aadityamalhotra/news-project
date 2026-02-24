@@ -164,8 +164,8 @@ DBSCAN_INITIAL_EPS = 0.8          # see tuning guide above — START HERE when t
 DBSCAN_INITIAL_MIN_SAMPLES = 8    # see tuning guide above
 
 # ── Hierarchical splitting ─────────────────────────────────────────────────────
-MAX_CLUSTER_SIZE_SOFT = 100       # see tuning guide above
-MAX_CLUSTER_SIZE_HARD = 150       # see tuning guide above
+MAX_CLUSTER_SIZE_SOFT = 80       # see tuning guide above
+MAX_CLUSTER_SIZE_HARD = 100       # see tuning guide above
 MIN_CLUSTER_SIZE_FINAL = 8        # see tuning guide above
 SUBCLUSTER_EPS = 0.5              # see tuning guide above — kept proportional to DBSCAN_INITIAL_EPS
 SUBCLUSTER_MIN_SAMPLES = 4        # see tuning guide above
