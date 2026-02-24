@@ -64,7 +64,7 @@ EMBED_CONTENT_LENGTH = 1500
 
 # ── UMAP settings ─────────────────────────────────────────────────────────────
 UMAP_N_COMPONENTS = 3
-UMAP_N_NEIGHBORS = 5      # higher = better global structure
+UMAP_N_NEIGHBORS = 6      # higher = better global structure
 UMAP_MIN_DIST = 0.05       # breathing room between points within a cluster
 UMAP_SPREAD = 2.5          # wide spread — purely visual, does NOT affect clustering
 UMAP_RANDOM_STATE = 42
@@ -74,19 +74,19 @@ UMAP_RANDOM_STATE = 42
 # NOT on the 3D UMAP projections. This decouples visual spread from clustering.
 # Cosine distance ranges 0–1, so eps is a semantic similarity threshold:
 #   eps=0.25 means "articles within 25% cosine distance are neighbours"
-DBSCAN_INITIAL_EPS = 0.35         # cosine distance threshold on raw embeddings
-DBSCAN_INITIAL_MIN_SAMPLES = 8     # min articles to form a core cluster point
+DBSCAN_INITIAL_EPS = 0.25         # cosine distance threshold on raw embeddings
+DBSCAN_INITIAL_MIN_SAMPLES = 4     # min articles to form a core cluster point
 
 # ── Hierarchical splitting ─────────────────────────────────────────────────────
-MAX_CLUSTER_SIZE_SOFT = 100        # split sooner before clusters get mixed
+MAX_CLUSTER_SIZE_SOFT = 80        # split sooner before clusters get mixed
 MAX_CLUSTER_SIZE_HARD = 150        # absolute hard cap
 MIN_CLUSTER_SIZE_FINAL = 8         # minimum cluster size after all splits
-SUBCLUSTER_EPS = 0.18              # tighter eps for subclustering large groups
+SUBCLUSTER_EPS = 0.15              # tighter eps for subclustering large groups
 SUBCLUSTER_MIN_SAMPLES = 5
 SUBCLUSTER_CONTENT_LENGTH = 1200
 
 # ── Visual exaggeration ────────────────────────────────────────────────────────
-PULL_FACTOR = 0.35       # was 0.06 — pull cluster members tighter inward
+PULL_FACTOR = 0.50       # was 0.06 — pull cluster members tighter inward
 PUSH_FACTOR = 0.45       # was 0.10 — push noise and cluster centers apart more
 
 # ── Outlier compression ────────────────────────────────────────────────────────
