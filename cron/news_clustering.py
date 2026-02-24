@@ -81,7 +81,7 @@ DBSCAN_INITIAL_MIN_SAMPLES = 8     # min articles to form a core cluster point
 MAX_CLUSTER_SIZE_SOFT = 100        # split sooner before clusters get mixed
 MAX_CLUSTER_SIZE_HARD = 150        # absolute hard cap
 MIN_CLUSTER_SIZE_FINAL = 8         # minimum cluster size after all splits
-SUBCLUSTER_EPS = 0.15              # tighter eps for subclustering large groups
+SUBCLUSTER_EPS = 0.18              # tighter eps for subclustering large groups
 SUBCLUSTER_MIN_SAMPLES = 5
 SUBCLUSTER_CONTENT_LENGTH = 1200
 
