@@ -106,7 +106,7 @@
 
 .masthead-date {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 15px;
+  font-size: 18px;
   font-style: italic;
   color: var(--np-ink-mid);
   white-space: nowrap;
@@ -123,7 +123,7 @@
 
 .masthead-nav-btn {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 15px;
+  font-size: 20px;
   font-style: italic;
   padding: 7px 20px;
   background: var(--np-ink);
@@ -228,7 +228,7 @@
 
 .article-meta-top {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 15px;
+  font-size: 17px;
   font-style: italic;
   color: var(--np-ink-faded);
   letter-spacing: 0.3px;
@@ -247,7 +247,7 @@
 .article-topic-tag {
   display: inline-block;
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 15px;
+  font-size: 18px;
   font-style: italic;
   color: var(--np-paper);
   background: var(--np-accent);

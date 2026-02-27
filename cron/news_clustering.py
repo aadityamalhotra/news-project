@@ -391,8 +391,19 @@ def _relevance_score(title: str, label: str, model) -> float:
 # ──────────────────────────────────────────────────────────────────────────────
 # HIGHLIGHTS SELECTION & SUMMARIZATION
 # ──────────────────────────────────────────────────────────────────────────────
+
+# Fallback blocklist: cluster names containing these words are deprioritised
+# when Groq is unavailable.
+SOFT_NEWS_KEYWORDS = [
+    "football", "soccer", "basketball", "baseball", "tennis", "golf", "cricket",
+    "nfl", "nba", "nhl", "mlb", "sports", "sport", "league", "tournament",
+    "celebrity", "entertainment", "music", "film", "movie", "tv", "television",
+    "actor", "actress", "singer", "fashion", "lifestyle", "travel", "food",
+    "recipe", "wellness", "fitness", "gaming", "esports",
+]
+
+
 def _has_usable_content(row) -> bool:
-    """Return True if an article row has clean, readable full_content."""
     content = str(row.get("full_content", "") or "").strip()
     return (
         bool(content)
@@ -403,64 +414,162 @@ def _has_usable_content(row) -> bool:
 
 
 def _source_id_from_name(name: str) -> str:
-    """Convert display source name to a source-id style slug for rank lookup."""
     return name.lower().replace(" ", "-").replace("'", "").replace(".", "")
+
+
+def _rank_clusters_by_news_value(clusters: list, n: int) -> list:
+    """
+    Use Groq to rank clusters by hard news value and return the top-N.
+    Falls back to keyword filtering + size ordering if Groq fails.
+    """
+    import time
+
+    eligible = [c for c in clusters if c["cluster_id"] != -1]
+
+    if not GROQ_API_KEY:
+        print("  warning: GROQ_API_KEY not set, using keyword fallback for cluster ranking")
+        return _rank_clusters_fallback(eligible, n)
+
+    cluster_list_text = "\n".join(
+        "ID {}: {} ({} articles)".format(c["cluster_id"], c["cluster_name"], c["article_count"])
+        for c in eligible
+    )
+
+    system_prompt = (
+        "You are a senior editor at an international wire service deciding which stories "
+        "lead the front page of a serious newspaper.\n\n"
+        "You will be given a list of today's news clusters. Your job is to select the "
+        + str(n) + " most important clusters based on hard news value.\n\n"
+        "PRIORITISE (in order):\n"
+        "1. Geopolitical events: wars, conflicts, diplomatic crises, sanctions, treaties\n"
+        "2. Elections, government policy, major political developments (any country)\n"
+        "3. Major US domestic news: economy, Federal Reserve, Congress, Supreme Court\n"
+        "4. International economics: trade, central banks, financial crises\n"
+        "5. Major disasters, public health crises, significant criminal cases\n\n"
+        "DEPRIORITISE: sports, entertainment, celebrity, lifestyle, tech product launches, "
+        "social media trends, minor local stories.\n\n"
+        "OUTPUT FORMAT: Return ONLY a comma-separated list of the cluster IDs in order of "
+        "importance, most important first. Example: 3,7,12,1,9\n"
+        "Output nothing else."
+    )
+
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                GROQ_API_URL,
+                headers={
+                    "Authorization": "Bearer " + GROQ_API_KEY,
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": GROQ_MODEL,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {
+                            "role": "user",
+                            "content": (
+                                "Here are today's news clusters:\n"
+                                + cluster_list_text
+                                + "\n\nReturn the "
+                                + str(n)
+                                + " most important cluster IDs, comma-separated, most important first:"
+                            ),
+                        },
+                    ],
+                    "temperature": 0.1,
+                    "max_tokens": 60,
+                    "stop": ["\n"],
+                },
+                timeout=GROQ_TIMEOUT,
+            )
+
+            if resp.status_code == 200:
+                raw = resp.json()["choices"][0]["message"]["content"].strip()
+                print("  Groq cluster ranking (attempt {}): '{}'".format(attempt + 1, raw))
+
+                try:
+                    ranked_ids = [int(x.strip()) for x in raw.split(",") if x.strip().lstrip("-").isdigit()]
+                    ranked_ids = [rid for rid in ranked_ids if rid != -1]
+
+                    id_to_cluster = {c["cluster_id"]: c for c in eligible}
+                    result = []
+                    seen = set()
+                    for rid in ranked_ids:
+                        if rid in id_to_cluster and rid not in seen:
+                            result.append(id_to_cluster[rid])
+                            seen.add(rid)
+                        if len(result) == n:
+                            break
+
+                    if len(result) < n:
+                        remaining = sorted(
+                            [c for c in eligible if c["cluster_id"] not in seen],
+                            key=lambda c: c["article_count"],
+                            reverse=True,
+                        )
+                        result.extend(remaining[:n - len(result)])
+
+                    print("  Selected clusters: {}".format([c["cluster_name"] for c in result]))
+                    return result
+
+                except Exception as parse_err:
+                    print("  Failed to parse Groq ranking response: {}".format(parse_err))
+
+            elif resp.status_code == 429:
+                wait = (2 ** attempt) * 3
+                print("  Groq rate limited (429), waiting {}s...".format(wait))
+                time.sleep(wait)
+                continue
+            else:
+                print("  Groq HTTP {}: {}".format(resp.status_code, resp.text[:200]))
+                break
+
+        except Exception as exc:
+            print("  Groq cluster ranking error (attempt {}): {}".format(attempt + 1, exc))
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+
+    print("  All Groq ranking attempts failed, using keyword fallback")
+    return _rank_clusters_fallback(eligible, n)
+
+
+def _rank_clusters_fallback(clusters: list, n: int) -> list:
+    def is_soft_news(cluster_name: str) -> bool:
+        name_lower = cluster_name.lower()
+        return any(kw in name_lower for kw in SOFT_NEWS_KEYWORDS)
+
+    hard = sorted([c for c in clusters if not is_soft_news(c["cluster_name"])],
+                  key=lambda c: c["article_count"], reverse=True)
+    soft = sorted([c for c in clusters if is_soft_news(c["cluster_name"])],
+                  key=lambda c: c["article_count"], reverse=True)
+    return (hard + soft)[:n]
 
 
 def _select_highlight_articles(df: pd.DataFrame, clusters_out: list, n: int = NUM_HIGHLIGHTS) -> list:
     """
-    Select the top-N highlight articles for the newspaper front page.
-
-    Two-fold strategy:
-      1. Take the N largest clusters (by article_count), excluding noise cluster (-1).
-      2. Within each cluster, articles are sorted by relevance_score descending
-         (semantic closeness to the cluster centroid — already computed).
-         We walk through this ordered list and find the first article whose
-         source_rank is the best (lowest) among those we have seen so far.
-         Concretely: we find the article with the best source rank that also
-         has usable full_content, using relevance order as the tiebreaker within
-         equally-ranked sources.
-      3. If no article has usable content, fall back to the best source rank
-         regardless of content quality.
+    Select top-N highlight articles for the newspaper front page.
+    Clusters are ranked by hard news value via Groq (geopolitics, major politics,
+    US domestic news, economics). Falls back to keyword filtering.
     """
-    ranked_clusters = sorted(
-        [c for c in clusters_out if c["cluster_id"] != -1],
-        key=lambda c: c["article_count"],
-        reverse=True,
-    )[:n]
-
-    # Build a relevance lookup from the clusters_out relevance_map (if present)
-    # At this point in the pipeline, relevance_map has already been merged into
-    # all_relevance and stripped from clusters_out — but the df itself has
-    # relevance_score attached per-row from articles_out construction.
-    # We re-use whatever is in the df directly.
+    top_clusters = _rank_clusters_by_news_value(clusters_out, n)
 
     highlights = []
 
-    for cluster in ranked_clusters:
+    for cluster in top_clusters:
         cid = cluster["cluster_id"]
         cluster_df = df[df["cluster_id"] == cid].copy()
 
-        # Attach source rank
         cluster_df["_source_rank"] = cluster_df["source_name"].apply(
             lambda name: get_source_rank(_source_id_from_name(name))
         )
 
-        # Sort primarily by relevance_score descending (most central articles first),
-        # secondarily by source rank ascending as a tiebreaker
         if "relevance_score" in cluster_df.columns:
             cluster_df = cluster_df.sort_values(
-                ["relevance_score", "_source_rank"],
-                ascending=[False, True],
+                ["relevance_score", "_source_rank"], ascending=[False, True]
             )
         else:
             cluster_df = cluster_df.sort_values("_source_rank")
 
-        # Walk the relevance-ordered list; track the best source rank seen.
-        # Select the first article that improves (or matches) the best source
-        # rank seen AND has usable content.
-        # This means: among all articles ordered by centrality, pick the one
-        # from the most authoritative source, using centrality as tiebreaker.
         selected = None
         best_rank_seen = DEFAULT_RANK + 1
 
@@ -470,17 +579,14 @@ def _select_highlight_articles(df: pd.DataFrame, clusters_out: list, n: int = NU
                 best_rank_seen = row_rank
                 if _has_usable_content(row):
                     selected = row
-                    break  # found best authoritative source with good content
+                    break
 
-        # Fallback pass: if no top-source article had usable content,
-        # walk again purely by source rank and take the first with usable content
         if selected is None:
             for _, row in cluster_df.sort_values("_source_rank").iterrows():
                 if _has_usable_content(row):
                     selected = row
                     break
 
-        # Last resort: best source rank regardless of content
         if selected is None and len(cluster_df) > 0:
             selected = cluster_df.sort_values("_source_rank").iloc[0]
 
