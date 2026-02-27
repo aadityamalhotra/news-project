@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './NewspaperFront.css';
 
+console.log('[NewspaperFront] module loaded');
+
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 // Format date in old-fashioned newspaper style: "Thursday, the 26th of February, 2026"
@@ -92,7 +94,9 @@ function ArticleCard({ article, variant = 'medium' }) {
 }
 
 export default function NewspaperFront() {
+  console.log('[NewspaperFront] component rendering');
   const navigate = useNavigate();
+  console.log('[NewspaperFront] useNavigate OK');
   const [highlights, setHighlights] = useState([]);
   const [date, setDate] = useState('');
   const [loading, setLoading] = useState(true);
