@@ -309,9 +309,6 @@
 
 .article-card--lead .article-body {
   font-size: 17px;
-  column-count: 2;
-  column-gap: 40px;
-  column-rule: 1px solid var(--np-rule);
 }
 
 .article-card--small .article-body {
