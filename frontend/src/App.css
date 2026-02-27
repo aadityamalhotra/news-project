@@ -5,14 +5,24 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Libre Baskerville', 'Georgia', 'Times New Roman', serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #FAF7F0;
-  color: #4A4947;
-  /* overflow: hidden removed - allow natural scrolling for About page */
+  background: #1C1510;
+  color: #D4C5A9;
+}
+
+/* ── CSS variables — shared palette ──────────────────────────────────────── */
+:root {
+  --app-bg:         #1C1510;   /* deep dark sepia */
+  --app-surface:    #251C14;   /* slightly lighter surface */
+  --app-surface-2:  #2F2318;   /* sidebar, panels */
+  --app-border:     #5C3A1E;   /* sepia brown border */
+  --app-border-dim: #3D2716;   /* dimmed border */
+  --app-text:       #D4C5A9;   /* warm off-white text */
+  --app-text-dim:   #8B7355;   /* dimmed text */
+  --app-accent:     #A0622A;   /* amber-brown accent (replaces rust) */
+  --app-accent-hi:  #C47F3A;   /* lighter accent for hover */
 }
 
 .App {
@@ -20,16 +30,15 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #FAF7F0;
-  overflow: hidden; /* Prevent scroll on main visualization page */
+  background: var(--app-bg);
+  overflow: hidden;
 }
 
 /* ── Header ────────────────────────────────────────────────────────────────── */
 .app-header {
-  padding: 16px 40px;
-  background: rgba(250, 247, 240, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 2px solid #B17457;
+  padding: 14px 32px;
+  background: var(--app-surface);
+  border-bottom: 2px solid var(--app-border);
   z-index: 100;
   display: flex;
   align-items: center;
@@ -40,7 +49,7 @@ body {
 .header-left {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .header-right {
@@ -49,37 +58,48 @@ body {
   gap: 12px;
 }
 
-.app-header h1 {
-  font-size: 26px;
-  font-weight: 600;
-  color: #4A4947;
+.app-header-title {
+  font-family: 'UnifrakturMaguntia', 'Georgia', serif;
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--app-text);
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: color 0.2s ease;
+}
+
+.app-header-title:hover {
+  color: var(--app-accent-hi);
 }
 
 .date-display {
-  font-size: 13px;
-  color: #B17457;
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--app-accent);
   font-weight: 400;
 }
 
-/* About Me button */
+/* About / nav button */
 .about-btn {
-  padding: 10px 22px;
+  padding: 8px 20px;
   background: transparent;
-  border: 2px solid #B17457;
-  border-radius: 8px;
-  color: #B17457;
-  font-size: 14px;
-  font-weight: 600;
+  border: 1.5px solid var(--app-border);
+  border-radius: 4px;
+  color: var(--app-text-dim);
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-size: 13px;
+  font-style: italic;
+  font-weight: 400;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.22s ease;
   letter-spacing: 0.3px;
 }
 
 .about-btn:hover {
-  background: #B17457;
-  color: #FAF7F0;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(177, 116, 87, 0.35);
+  background: var(--app-accent);
+  color: var(--app-text);
+  border-color: var(--app-accent);
 }
 
 /* ── Main layout ───────────────────────────────────────────────────────────── */
@@ -90,7 +110,7 @@ body {
   min-height: 0;
 }
 
-/* ── Right panel: 3D viz on top, article list below ────────────────────────── */
+/* ── Right panel ───────────────────────────────────────────────────────────── */
 .right-panel {
   flex: 1;
   display: flex;
@@ -100,20 +120,18 @@ body {
 }
 
 .visualization-container {
-  /* When no article panel is visible, takes all available height.
-     When article panel is visible, splits at ~62% / 38%. */
   flex: 1 1 0;
   min-height: 0;
   position: relative;
-  background: #FAF7F0;
+  background: var(--app-bg);
 }
 
-/* ── Article panel (below the 3D canvas) ───────────────────────────────────── */
+/* ── Article panel ─────────────────────────────────────────────────────────── */
 .article-panel {
-  flex: 0 0 45%;  /* Increased from 38% to 45% for more visible space (LOCATION: line 112) */
+  flex: 0 0 45%;
   min-height: 0;
-  border-top: 2px solid #B17457;
-  background: rgba(250, 247, 240, 0.98);
+  border-top: 2px solid var(--app-border);
+  background: var(--app-surface);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -121,14 +139,8 @@ body {
 }
 
 @keyframes panelSlideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .article-panel-header {
@@ -136,25 +148,26 @@ body {
   align-items: center;
   gap: 10px;
   padding: 14px 24px;
-  border-bottom: 1px solid rgba(177, 116, 87, 0.25);
+  border-bottom: 1px solid var(--app-border-dim);
   flex-shrink: 0;
-  background: rgba(250, 247, 240, 0.98);
+  background: var(--app-surface);
 }
 
 .article-panel-dot {
-  width: 12px;
-  height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 8px currentColor;
+  box-shadow: 0 0 6px currentColor;
 }
 
 .article-panel-title {
-  font-size: 15px;
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-size: 14px;
   font-weight: 700;
-  color: #4A4947;
+  color: var(--app-text);
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 1px;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -162,8 +175,8 @@ body {
 }
 
 .article-panel-count {
-  font-size: 12px;
-  color: #B17457;
+  font-size: 11px;
+  color: var(--app-accent);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -174,26 +187,17 @@ body {
   padding: 8px 16px 16px;
 }
 
-.article-panel-list::-webkit-scrollbar {
-  width: 5px;
-}
-.article-panel-list::-webkit-scrollbar-track {
-  background: rgba(216, 210, 194, 0.3);
-}
-.article-panel-list::-webkit-scrollbar-thumb {
-  background: rgba(177, 116, 87, 0.4);
-  border-radius: 3px;
-}
-.article-panel-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(177, 116, 87, 0.65);
-}
+.article-panel-list::-webkit-scrollbar { width: 5px; }
+.article-panel-list::-webkit-scrollbar-track { background: rgba(92, 58, 30, 0.15); }
+.article-panel-list::-webkit-scrollbar-thumb { background: rgba(160, 98, 42, 0.4); border-radius: 3px; }
+.article-panel-list::-webkit-scrollbar-thumb:hover { background: rgba(160, 98, 42, 0.65); }
 
 .article-panel-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 14px;  /* Increased from 10px 12px for more breathing room (LOCATION: line 194) */
-  border-radius: 8px;
+  padding: 12px 14px;
+  border-radius: 6px;
   text-decoration: none;
   transition: all 0.18s ease;
   border: 1px solid transparent;
@@ -201,15 +205,15 @@ body {
 }
 
 .article-panel-item:hover {
-  background: rgba(177, 116, 87, 0.08);
-  border-color: rgba(177, 116, 87, 0.3);
+  background: rgba(92, 58, 30, 0.25);
+  border-color: var(--app-border-dim);
   transform: translateX(3px);
 }
 
 .article-panel-rank {
   font-size: 11px;
   font-weight: 700;
-  color: #B17457;
+  color: var(--app-accent);
   opacity: 0.6;
   width: 20px;
   flex-shrink: 0;
@@ -222,9 +226,9 @@ body {
 }
 
 .article-panel-item-title {
-  font-size: 15px;  /* Increased from 13px to 15px (LOCATION: line 224) */
+  font-size: 14px;
   font-weight: 500;
-  color: #4A4947;
+  color: var(--app-text);
   line-height: 1.4;
   white-space: nowrap;
   overflow: hidden;
@@ -233,18 +237,18 @@ body {
 }
 
 .article-panel-item:hover .article-panel-item-title {
-  color: #B17457;
+  color: var(--app-accent-hi);
 }
 
 .article-panel-meta {
-  font-size: 12px;  /* Increased from 11px to 12px (LOCATION: line 239) */
-  color: #9A9591;
+  font-size: 11px;
+  color: var(--app-text-dim);
 }
 
 .article-panel-source {
   font-weight: 600;
-  color: #B17457;
-  opacity: 0.8;
+  color: var(--app-accent);
+  opacity: 0.85;
 }
 
 .article-panel-author {
@@ -253,7 +257,7 @@ body {
 
 .article-panel-arrow {
   font-size: 13px;
-  color: #B17457;
+  color: var(--app-accent);
   opacity: 0;
   transition: opacity 0.18s ease;
   flex-shrink: 0;
@@ -263,157 +267,98 @@ body {
   opacity: 0.7;
 }
 
-/* ── Loading State ────────────────────────────────────────────────────────── */
+/* ── Loading State ─────────────────────────────────────────────────────────── */
 .loading-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(250, 247, 240, 0.95);
+  background: rgba(28, 21, 16, 0.95);
   z-index: 1000;
 }
 
 .loading-spinner {
-  width: 60px;
-  height: 60px;
-  border: 4px solid #D8D2C2;
-  border-top-color: #B17457;
+  width: 56px;
+  height: 56px;
+  border: 3px solid rgba(92, 58, 30, 0.3);
+  border-top-color: var(--app-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin-bottom: 20px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
+@keyframes spin { to { transform: rotate(360deg); } }
 
 .loading-overlay p {
-  font-size: 18px;
-  margin-bottom: 8px;
-  color: #4A4947;
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-size: 17px;
+  font-style: italic;
+  margin-bottom: 6px;
+  color: var(--app-text);
 }
 
 .loading-subtext {
-  font-size: 14px;
-  color: #B17457;
+  font-size: 13px !important;
+  color: var(--app-accent) !important;
 }
 
-/* ── Error State ─────────────────────────────────────────────────────────── */
+/* ── Error State ───────────────────────────────────────────────────────────── */
 .error-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(250, 247, 240, 0.95);
+  background: rgba(28, 21, 16, 0.95);
   z-index: 1000;
 }
 
 .error-box {
-  background: rgba(177, 116, 87, 0.1);
-  border: 2px solid #B17457;
-  border-radius: 12px;
+  background: var(--app-surface-2);
+  border: 2px solid var(--app-border);
+  border-radius: 8px;
   padding: 40px;
   max-width: 520px;
   text-align: center;
 }
 
 .error-box h2 {
-  color: #B17457;
+  font-family: 'Playfair Display', 'Georgia', serif;
+  color: var(--app-accent-hi);
   margin-bottom: 16px;
   font-size: 22px;
 }
 
 .error-box p {
-  color: #4A4947;
+  color: var(--app-text);
   margin-bottom: 24px;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .error-box button {
-  background: #4A4947;
-  color: #FAF7F0;
+  background: var(--app-accent);
+  color: var(--app-text);
   border: none;
   padding: 12px 32px;
-  border-radius: 8px;
-  font-size: 15px;
+  border-radius: 6px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
 }
 
 .error-box button:hover {
-  background: #B17457;
+  background: var(--app-accent-hi);
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(177, 116, 87, 0.4);
 }
 
-/* ── Empty State ─────────────────────────────────────────────────────────── */
-.empty-state {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  max-width: 480px;
-}
-
-.empty-state h2 {
-  font-size: 30px;
-  margin-bottom: 14px;
-  color: #4A4947;
-}
-
-.empty-state p {
-  font-size: 16px;
-  color: #B17457;
-  margin-bottom: 32px;
-  line-height: 1.6;
-}
-
-.cta-button {
-  background: #4A4947;
-  color: #FAF7F0;
-  border: none;
-  padding: 16px 48px;
-  border-radius: 12px;
-  font-size: 18px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 24px rgba(74, 73, 71, 0.3);
-}
-
-.cta-button:hover {
-  background: #B17457;
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(177, 116, 87, 0.5);
-}
-
-/* ── Responsive ──────────────────────────────────────────────────────────── */
+/* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .app-header {
-    padding: 14px 20px;
-  }
-
-  .app-header h1 {
-    font-size: 20px;
-  }
-
-  .main-container {
-    flex-direction: column;
-  }
-
-  .article-panel {
-    flex: 0 0 45%;
-  }
+  .app-header { padding: 12px 20px; }
+  .app-header-title { font-size: 22px; }
+  .main-container { flex-direction: column; }
+  .article-panel { flex: 0 0 45%; }
 }

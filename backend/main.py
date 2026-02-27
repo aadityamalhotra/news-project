@@ -88,10 +88,26 @@ class ClusterInfo(BaseModel):
     center_z: float
 
 
+class HighlightArticle(BaseModel):
+    cluster_id: int
+    cluster_name: str
+    article_id: str
+    title: str
+    source_name: str
+    author: Optional[str]
+    url: str
+    summary: str
+
+
 class VisualizationResponse(BaseModel):
     articles: List[Article]
     clusters: List[ClusterInfo]
     total_articles: int
+    date: str
+
+
+class HighlightsResponse(BaseModel):
+    highlights: List[HighlightArticle]
     date: str
 
 
@@ -113,6 +129,19 @@ def _load_cache(date_str: str) -> dict:
             status_code=404,
             detail=f"No visualization data available for {date_str}. The clustering pipeline may not have run yet."
         )
+
+
+def _latest_available_date() -> Optional[str]:
+    """Return the most recent date that has a cached file, or None."""
+    try:
+        files = supabase.storage.from_(SUPABASE_BUCKET).list()
+        dates = sorted(
+            [f["name"].replace(".json", "") for f in files if f["name"].endswith(".json")],
+            reverse=True,
+        )
+        return dates[0] if dates else None
+    except Exception:
+        return None
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -144,13 +173,64 @@ async def health_check():
     }
 
 
+@app.get("/api/highlights")
+async def get_highlights(date: Optional[str] = None) -> HighlightsResponse:
+    """
+    Return the pre-computed highlight articles for the newspaper front page.
+
+    - If `date` is provided (YYYY-MM-DD), loads that date's cache.
+    - If omitted, defaults to the most recent available cached date.
+    - Returns 404 if no cache exists for the requested date.
+    - Returns 404 if the cache exists but has no highlights key
+      (generated before this feature was added).
+    """
+    if date:
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+            target_date_str = date
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Date must be in YYYY-MM-DD format")
+    else:
+        target_date_str = _latest_available_date()
+        if not target_date_str:
+            raise HTTPException(
+                status_code=404,
+                detail="No cached data available yet. The pipeline has not run."
+            )
+
+    data = _load_cache(target_date_str)
+
+    raw_highlights = data.get("highlights")
+    if not raw_highlights:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No highlights found for {target_date_str}. This date was cached before the highlights feature was added — re-run the clustering pipeline for this date."
+        )
+
+    highlights = [
+        HighlightArticle(
+            cluster_id=h["cluster_id"],
+            cluster_name=h["cluster_name"],
+            article_id=h["article_id"],
+            title=h["title"],
+            source_name=h["source_name"],
+            author=h.get("author"),
+            url=h["url"],
+            summary=h["summary"],
+        )
+        for h in raw_highlights
+    ]
+
+    return HighlightsResponse(highlights=highlights, date=target_date_str)
+
+
 @app.get("/api/load-visualization")
 async def load_visualization(date: Optional[str] = None) -> VisualizationResponse:
     """
     Load pre-processed visualization data from Supabase Storage.
 
     - If `date` is provided (YYYY-MM-DD), loads that date's cache.
-    - If omitted, defaults to yesterday.
+    - If omitted, defaults to the most recent available cached date.
     - Returns 404 if no cache exists for the requested date.
     """
     if date:
@@ -160,7 +240,10 @@ async def load_visualization(date: Optional[str] = None) -> VisualizationRespons
         except ValueError:
             raise HTTPException(status_code=400, detail="Date must be in YYYY-MM-DD format")
     else:
-        target_date_str = str((datetime.now(ZoneInfo("America/Chicago")) - timedelta(days=1)).date())
+        target_date_str = _latest_available_date()
+        if not target_date_str:
+            # Fallback to yesterday if storage list fails
+            target_date_str = str((datetime.now(ZoneInfo("America/Chicago")) - timedelta(days=1)).date())
 
     print(f"Loading cache for {target_date_str}...")
     data = _load_cache(target_date_str)

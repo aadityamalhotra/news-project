@@ -4,6 +4,7 @@ import './App.css';
 import NewsVisualization from './components/NewsVisualization';
 import Sidebar from './components/Sidebar';
 import AboutMe from './components/AboutMe';
+import NewspaperFront from './components/NewspaperFront';
 import axios from 'axios';
 
 // ENV VARIABLE MUSH
@@ -11,20 +12,23 @@ import axios from 'axios';
 // e.g. https://your-api.onrender.com
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-// ─── Main visualization page ─────────────────────────────────────────────────
-function MainPage() {
+// ─── Visualization page ───────────────────────────────────────────────────────
+function VizPage() {
   const navigate = useNavigate();
   const [articles, setArticles] = useState([]);
   const [clusters, setClusters] = useState([]);
   const [selectedCluster, setSelectedCluster] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);   // starts true — auto-loads on mount
   const [error, setError] = useState(null);
   const [visualizationDate, setVisualizationDate] = useState(null);
   const [availableDates, setAvailableDates] = useState([]);
   const [uncachedDates, setUncachedDates] = useState([]);
 
+  // Auto-load the latest visualization on mount
   useEffect(() => {
     fetchAvailableDates();
+    loadVisualization();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchAvailableDates = async () => {
@@ -75,14 +79,16 @@ function MainPage() {
     <div className="App">
       <header className="app-header">
         <div className="header-left">
-          <h1>Global News Visualization</h1>
+          <h1 className="app-header-title" onClick={() => navigate('/')}>
+            Tomorrow's Archive
+          </h1>
           {visualizationDate && (
             <p className="date-display">Showing news from {visualizationDate}</p>
           )}
         </div>
         <div className="header-right">
           <button className="about-btn" onClick={() => navigate('/about')}>
-            About Me
+            About
           </button>
         </div>
       </header>
@@ -118,20 +124,7 @@ function MainPage() {
               </div>
             )}
 
-            {!loading && !error && articles.length === 0 && (
-              <div className="empty-state">
-                <h2>Welcome to News Visualization</h2>
-                <p>Select a date and click "Load Visualization" to explore the news in 3D</p>
-                <button
-                  className="cta-button"
-                  onClick={() => loadVisualization()}
-                >
-                  Load Latest
-                </button>
-              </div>
-            )}
-
-            {!loading && articles.length > 0 && (
+            {!loading && !error && articles.length > 0 && (
               <NewsVisualization
                 articles={articles}
                 clusters={clusters}
@@ -145,7 +138,7 @@ function MainPage() {
               <div className="article-panel-header">
                 <span
                   className="article-panel-dot"
-                  style={{ backgroundColor: selectedClusterInfo?.color || '#B17457' }}
+                  style={{ backgroundColor: selectedClusterInfo?.color || '#8B7355' }}
                 />
                 <h2 className="article-panel-title">
                   {selectedClusterInfo?.cluster_name}
@@ -190,7 +183,8 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<MainPage />} />
+        <Route path="/" element={<NewspaperFront />} />
+        <Route path="/viz" element={<VizPage />} />
         <Route path="/about" element={<AboutMe />} />
       </Routes>
     </Router>

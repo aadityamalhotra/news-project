@@ -20,7 +20,9 @@ PIPELINE:
   7. Visual exaggeration for cleaner separation
   8. Label each cluster with Groq / llama-3.1-8b-instant
   9. Score each article's semantic relevance to its cluster name
-  10. Upload result to Supabase Storage as <YYYY-MM-DD>.json
+  10. Select top-5 highlight articles (largest clusters × best source)
+  11. Groq-summarize each highlight article to ~150 words
+  12. Upload result to Supabase Storage as <YYYY-MM-DD>.json
 
 GROQ SETUP:
   - Sign up free at console.groq.com
@@ -118,6 +120,7 @@ import json
 import os
 import random
 import re
+import time
 from collections import Counter
 from datetime import datetime
 
@@ -130,6 +133,8 @@ from sentence_transformers import SentenceTransformer
 import umap
 from sklearn.cluster import DBSCAN
 from supabase import create_client
+
+from source_rankings import get_source_rank
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION
@@ -179,6 +184,9 @@ PUSH_FACTOR = 0.45                # see tuning guide above
 OUTLIER_COMPRESS_THRESHOLD_MULTIPLIER = 2.0
 OUTLIER_LOG_SCALE = 0.5
 
+# ── Highlights ─────────────────────────────────────────────────────────────────
+NUM_HIGHLIGHTS = 5                # number of front-page highlight stories
+
 # ── Supabase Storage bucket name ───────────────────────────────────────────────
 SUPABASE_BUCKET = "cluster-cache"
 
@@ -201,14 +209,14 @@ def _cluster_colors(n: int) -> list:
     # Use the Golden Ratio to spread hues evenly
     phi = 0.618033988749895
     hue = 0.5  # Starting point
-    
+
     for i in range(n):
         hue = (hue + phi) % 1.0
         # Vary saturation and value slightly for more "texture"
         # Alternate saturation between 0.5 and 0.8 to distinguish neighbors
-        saturation = 0.6 + (i % 2) * 0.2 
+        saturation = 0.6 + (i % 2) * 0.2
         value = 0.85 + (i % 3) * 0.05
-        
+
         r, g, b = colorsys.hsv_to_rgb(hue, saturation, value)
         colors.append(f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}")
     return colors
@@ -229,14 +237,11 @@ def _label_cluster_groq(titles: list, embeddings_subset: np.ndarray = None) -> s
     - Prompt explicitly instructs country/person/event naming
     - Falls back to keyword extraction only after all retries exhausted
     """
-    import time
-
     if not GROQ_API_KEY:
         print("  ⚠ GROQ_API_KEY not set — using keyword fallback")
         return _label_cluster_fallback(titles)
 
     # Select the most representative titles — those closest to the cluster centroid
-    # This gives Groq the clearest signal about what the cluster is actually about
     if embeddings_subset is not None and len(embeddings_subset) == len(titles):
         centroid = embeddings_subset.mean(axis=0)
         sims = embeddings_subset @ centroid / (
@@ -245,7 +250,6 @@ def _label_cluster_groq(titles: list, embeddings_subset: np.ndarray = None) -> s
         top_indices = np.argsort(sims)[::-1][:40]
         selected_titles = [titles[i] for i in top_indices]
     else:
-        # Fallback: take up to 40 titles as-is (for smaller clusters, all titles)
         selected_titles = titles[:40]
 
     titles_text = "\n".join(f"- {t}" for t in selected_titles)
@@ -279,7 +283,6 @@ def _label_cluster_groq(titles: list, embeddings_subset: np.ndarray = None) -> s
             resp = requests.post(
                 GROQ_API_URL,
                 headers={
-                    # CONNECTION MUSH
                     "Authorization": f"Bearer {GROQ_API_KEY}",
                     "Content-Type": "application/json",
                 },
@@ -298,7 +301,7 @@ def _label_cluster_groq(titles: list, embeddings_subset: np.ndarray = None) -> s
                     ],
                     "temperature": 0.1,
                     "max_tokens": 25,
-                    "stop": ["\n", "|"],   # Groq allows max 4 stop tokens
+                    "stop": ["\n", "|"],
                 },
                 timeout=GROQ_TIMEOUT,
             )
@@ -306,7 +309,6 @@ def _label_cluster_groq(titles: list, embeddings_subset: np.ndarray = None) -> s
             if resp.status_code == 200:
                 raw = resp.json()["choices"][0]["message"]["content"].strip()
 
-                # Strip any preamble the model snuck in
                 for prefix in [
                     "Topic:", "Topic name:", "The topic is", "Based on",
                     "ONE TOPIC:", "Main topic:", "Answer:", "Label:", "Here is",
@@ -318,7 +320,6 @@ def _label_cluster_groq(titles: list, embeddings_subset: np.ndarray = None) -> s
                 raw = raw.split("\n")[0].strip().strip("\"'.,;:")
                 raw = re.sub(r"^\d+\.\s*", "", raw)
                 raw = re.sub(r"^[-•*]\s*", "", raw)
-                # Remove trailing filler words
                 raw = re.sub(r"\b(News|Update|Report|Latest|Coverage)$", "", raw, flags=re.IGNORECASE).strip()
                 raw = " ".join(raw.split()[:5])
 
@@ -329,7 +330,6 @@ def _label_cluster_groq(titles: list, embeddings_subset: np.ndarray = None) -> s
                 print(f"  ⚠ Groq returned too-short label '{raw}' on attempt {attempt+1}, retrying...")
 
             elif resp.status_code == 429:
-                # Rate limited — wait with exponential backoff
                 wait = (2 ** attempt) * 3
                 print(f"  ⚠ Groq rate limited (429), waiting {wait}s before retry...")
                 time.sleep(wait)
@@ -386,6 +386,177 @@ def _relevance_score(title: str, label: str, model) -> float:
     except Exception as e:
         print(f"  Warning: relevance score failed for '{title}' vs '{label}': {e}")
         return 0.0
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# HIGHLIGHTS SELECTION & SUMMARIZATION
+# ──────────────────────────────────────────────────────────────────────────────
+def _select_highlight_articles(df: pd.DataFrame, clusters_out: list, n: int = NUM_HIGHLIGHTS) -> list:
+    """
+    Select the top-N highlight articles for the newspaper front page.
+
+    Strategy:
+      1. Take the N largest clusters (by article_count), excluding noise cluster (-1)
+      2. Within each cluster, rank articles by source authority (source_rankings.py)
+      3. Pick the highest-ranked article that has usable full_content
+      4. Fall back to next-best source if content is missing/blocked
+    """
+    # Sort clusters by article count descending, exclude uncategorized
+    ranked_clusters = sorted(
+        [c for c in clusters_out if c["cluster_id"] != -1],
+        key=lambda c: c["article_count"],
+        reverse=True,
+    )[:n]
+
+    highlights = []
+
+    for cluster in ranked_clusters:
+        cid = cluster["cluster_id"]
+        cluster_df = df[df["cluster_id"] == cid].copy()
+
+        # Attach source rank to each article in this cluster
+        cluster_df["_source_rank"] = cluster_df["source_name"].apply(
+            lambda name: get_source_rank(
+                # Convert display name to source-id format for lookup
+                name.lower().replace(" ", "-").replace("'", "").replace(".", "")
+            )
+        )
+
+        # Sort by source rank ascending (lower = more authoritative)
+        cluster_df = cluster_df.sort_values("_source_rank")
+
+        # Pick first article with usable content
+        selected = None
+        for _, row in cluster_df.iterrows():
+            content = str(row.get("full_content", "") or "").strip()
+            if (
+                content
+                and len(content) > 200
+                and "consent" not in content.lower()[:100]
+                and content != "Blocked by Consent Wall"
+            ):
+                selected = row
+                break
+
+        # Fallback: if no article has good content, just take the best-ranked one
+        if selected is None and len(cluster_df) > 0:
+            selected = cluster_df.iloc[0]
+
+        if selected is not None:
+            highlights.append({
+                "cluster_id": cid,
+                "cluster_name": cluster["cluster_name"],
+                "article_id": str(selected["article_id"]),
+                "title": str(selected["title"]),
+                "source_name": str(selected["source_name"]),
+                "author": str(selected["author"]) if pd.notna(selected.get("author")) else None,
+                "url": str(selected["url"]),
+                "full_content": str(selected.get("full_content", "") or ""),
+            })
+
+    return highlights
+
+
+def _summarize_article_groq(title: str, content: str, target_words: int = 150) -> str:
+    """
+    Use Groq to produce a clean ~150-word summary of an article.
+
+    The prompt is strict: preserve all facts, names, numbers, and meaning exactly.
+    The model's only job is to clean structure and trim to length.
+    Falls back to a hard truncation if Groq fails.
+    """
+    if not GROQ_API_KEY:
+        return _truncate_content_fallback(content, target_words)
+
+    # Truncate input to avoid token waste — 3000 chars is plenty for summarization
+    content_input = content[:3000].strip()
+
+    system_prompt = (
+        "You are a copy editor at a wire service. Your ONLY job is to condense article text "
+        "to approximately " + str(target_words) + " words for print.\n\n"
+        "ABSOLUTE RULES — violating any of these is unacceptable:\n"
+        "- Do NOT change, add, alter, or invent any facts, names, numbers, dates, or claims.\n"
+        "- Do NOT add your own interpretation, analysis, or commentary.\n"
+        "- Do NOT introduce information not present in the original text.\n"
+        "- Preserve the exact meaning of every sentence you keep.\n"
+        "- Write in clean, plain prose. No bullet points, no headers.\n"
+        "- Output ONLY the condensed article text. No preamble, no labels, no explanations.\n"
+        "- If the original text is already clean and under " + str(target_words + 30) + " words, "
+        "return it as-is with only minor structural cleanup.\n"
+        "- End at a complete sentence boundary. Do not cut mid-sentence."
+    )
+
+    for attempt in range(3):
+        try:
+            resp = requests.post(
+                GROQ_API_URL,
+                headers={
+                    "Authorization": f"Bearer {GROQ_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": GROQ_MODEL,
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {
+                            "role": "user",
+                            "content": (
+                                f"Article title: {title}\n\n"
+                                f"Article text:\n{content_input}\n\n"
+                                f"Condense to approximately {target_words} words. "
+                                f"Output only the condensed text:"
+                            ),
+                        },
+                    ],
+                    "temperature": 0.1,
+                    "max_tokens": 300,
+                },
+                timeout=GROQ_TIMEOUT,
+            )
+
+            if resp.status_code == 200:
+                summary = resp.json()["choices"][0]["message"]["content"].strip()
+                # Strip any preamble the model might have added
+                for prefix in ["Here is", "Summary:", "Condensed:", "Article:"]:
+                    if summary.lower().startswith(prefix.lower()):
+                        summary = summary[len(prefix):].strip().lstrip(":- ")
+                print(f"  ✓ Groq summary ({len(summary.split())} words)")
+                return summary
+
+            elif resp.status_code == 429:
+                wait = (2 ** attempt) * 3
+                print(f"  ⚠ Groq rate limited (429) on summary, waiting {wait}s...")
+                time.sleep(wait)
+                continue
+
+            else:
+                print(f"  ✗ Groq summary HTTP {resp.status_code}")
+                break
+
+        except Exception as exc:
+            print(f"  ✗ Groq summary error on attempt {attempt+1}: {exc}")
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+
+    # Fallback: clean truncation at sentence boundary
+    return _truncate_content_fallback(content, target_words)
+
+
+def _truncate_content_fallback(content: str, target_words: int = 150) -> str:
+    """
+    Hard truncation at a sentence boundary near target_words.
+    Used when Groq is unavailable.
+    """
+    sentences = re.split(r'(?<=[.!?])\s+', content.strip())
+    result = []
+    word_count = 0
+    for sentence in sentences:
+        words = sentence.split()
+        if word_count + len(words) > target_words and result:
+            break
+        result.append(sentence)
+        word_count += len(words)
+    return " ".join(result) if result else content[:600]
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -600,9 +771,6 @@ def build_cluster_cache():
     projections = compressed
 
     # ── DBSCAN on 3D UMAP coordinates ─────────────────────────────────────────
-    # Clustering on the 3D projection means visual groups = real clusters.
-    # If you see a group of points close together, they will be clustered together.
-    # eps is in euclidean 3D space — tune it alongside UMAP_SPREAD.
     print(f"\nDBSCAN clustering on 3D UMAP coordinates...")
     print(f"  eps={DBSCAN_INITIAL_EPS}, min_samples={DBSCAN_INITIAL_MIN_SAMPLES}, metric=euclidean")
     print(f"  (visual groups = real clusters — what you see is what gets clustered)")
@@ -611,7 +779,7 @@ def build_cluster_cache():
         min_samples=DBSCAN_INITIAL_MIN_SAMPLES,
         metric='euclidean',
     )
-    labels = clusterer.fit_predict(projections)  # projections = 3D UMAP output
+    labels = clusterer.fit_predict(projections)
     df["cluster_id"] = labels
 
     n_clusters = int((labels != -1).any() and labels[labels != -1].max() + 1)
@@ -645,8 +813,6 @@ def build_cluster_cache():
             color = "#808080"
         else:
             print(f"\n  Cluster {cluster_id} ({len(titles)} articles):")
-            # Pass the raw embeddings for this cluster so Groq receives the most
-            # representative titles (closest to centroid) rather than a random sample
             cluster_indices = cluster_df.index.tolist()
             cluster_embeddings = embeddings[cluster_indices]
             cluster_name = _label_cluster_groq(titles, embeddings_subset=cluster_embeddings)
@@ -694,12 +860,34 @@ def build_cluster_cache():
         for c in clusters_out
     ]
 
+    # ── Select & summarize highlights ─────────────────────────────────────────
+    print(f"\nSelecting top-{NUM_HIGHLIGHTS} highlight articles...")
+    raw_highlights = _select_highlight_articles(df, clusters_out, n=NUM_HIGHLIGHTS)
+
+    highlights_out = []
+    for i, h in enumerate(raw_highlights):
+        print(f"\n  Highlight {i+1}/{NUM_HIGHLIGHTS}: '{h['title']}' ({h['source_name']})")
+        summary = _summarize_article_groq(h["title"], h["full_content"], target_words=150)
+        highlights_out.append({
+            "cluster_id": h["cluster_id"],
+            "cluster_name": h["cluster_name"],
+            "article_id": h["article_id"],
+            "title": h["title"],
+            "source_name": h["source_name"],
+            "author": h["author"],
+            "url": h["url"],
+            "summary": summary,
+        })
+
+    print(f"\n✓ {len(highlights_out)} highlights prepared")
+
     # ── Build payload ──────────────────────────────────────────────────────────
     payload = {
         "date": date_str,
         "total_articles": len(articles_out),
         "articles": articles_out,
         "clusters": clusters_final,
+        "highlights": highlights_out,
         "metadata": {
             "generated_at": datetime.utcnow().isoformat() + "Z",
             "n_clusters": n_clusters,
@@ -732,7 +920,7 @@ def build_cluster_cache():
     try:
         supabase_client.storage.from_(SUPABASE_BUCKET).remove([output_filename])
     except Exception:
-        pass  # File didn't exist yet, that's fine
+        pass
 
     # CONNECTION MUSH
     supabase_client.storage.from_(SUPABASE_BUCKET).upload(

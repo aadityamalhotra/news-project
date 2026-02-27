@@ -1,13 +1,15 @@
+/* AboutMe.css — dark sepia palette */
+@import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=IM+Fell+English:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+
 .about-page {
   width: 100vw;
   min-height: 100vh;
-  background: #FAF7F0;
-  color: #4A4947;
+  background: #1C1510;
+  color: #D4C5A9;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
-  /* This page needs to scroll - body overflow:hidden is removed */
 }
 
 /* ── Header ────────────────────────────────────────────────────────────────── */
@@ -17,38 +19,40 @@
   z-index: 50;
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding: 16px 48px;
-  background: rgba(250, 247, 240, 0.96);
+  gap: 20px;
+  padding: 14px 48px;
+  background: rgba(28, 21, 16, 0.97);
   backdrop-filter: blur(10px);
-  border-bottom: 2px solid #B17457;
+  border-bottom: 2px solid #5C3A1E;
 }
 
 .back-btn {
-  padding: 9px 18px;
+  padding: 8px 18px;
   background: transparent;
-  border: 2px solid #B17457;
-  border-radius: 8px;
-  color: #B17457;
+  border: 1.5px solid #5C3A1E;
+  border-radius: 4px;
+  color: #8B7355;
+  font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 13px;
-  font-weight: 600;
+  font-style: italic;
   cursor: pointer;
-  transition: all 0.22s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .back-btn:hover {
-  background: #B17457;
-  color: #FAF7F0;
+  background: #A0622A;
+  color: #D4C5A9;
+  border-color: #A0622A;
 }
 
 .about-site-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #4A4947;
-  opacity: 0.6;
-  letter-spacing: 0.3px;
+  font-family: 'UnifrakturMaguntia', 'Georgia', serif;
+  font-size: 20px;
+  font-weight: 400;
+  color: #8B7355;
+  letter-spacing: 0.5px;
 }
 
 /* ── Main content ───────────────────────────────────────────────────────────── */
@@ -57,135 +61,135 @@
   max-width: 1100px;
   width: 100%;
   margin: 0 auto;
-  padding: 60px 48px 80px;
+  padding: 56px 48px 80px;
 }
 
 /* ── Hero ───────────────────────────────────────────────────────────────────── */
 .about-hero {
-  margin-bottom: 56px;
-  padding-bottom: 40px;
-  border-bottom: 1px solid rgba(177, 116, 87, 0.2);
+  margin-bottom: 48px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid rgba(92, 58, 30, 0.4);
 }
 
 .about-name {
-  font-size: 52px;
-  font-weight: 700;
-  color: #4A4947;
-  letter-spacing: -1px;
+  font-family: 'Playfair Display', 'Georgia', serif;
+  font-size: 50px;
+  font-weight: 900;
+  color: #D4C5A9;
+  letter-spacing: -0.5px;
   margin-bottom: 10px;
   line-height: 1.1;
 }
 
 .about-tagline {
-  font-size: 20px;
-  color: #B17457;
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-size: 18px;
+  font-style: italic;
+  color: #A0622A;
   font-weight: 400;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 /* ── Card grid ──────────────────────────────────────────────────────────────── */
 .about-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
 
 .about-card {
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(177, 116, 87, 0.2);
-  border-radius: 16px;
-  padding: 32px;
-  backdrop-filter: blur(8px);
+  background: #251C14;
+  border: 1px solid rgba(92, 58, 30, 0.35);
+  border-radius: 10px;
+  padding: 28px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .about-card:hover {
-  border-color: rgba(177, 116, 87, 0.45);
-  box-shadow: 0 4px 20px rgba(177, 116, 87, 0.1);
+  border-color: rgba(160, 98, 42, 0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* Wide card: spans full width in first row */
-.about-card--wide {
-  grid-column: 1 / -1;
-}
-
-/* Full-width card at the bottom */
-.about-card--full {
-  grid-column: 1 / -1;
-}
+.about-card--wide  { grid-column: 1 / -1; }
+.about-card--full  { grid-column: 1 / -1; }
 
 .about-card-title {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1.4px;
-  color: #B17457;
-  margin-bottom: 20px;
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-size: 10px;
+  font-style: italic;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0.5px;
+  color: #A0622A;
+  margin-bottom: 18px;
+  border-bottom: 1px solid rgba(92, 58, 30, 0.3);
+  padding-bottom: 8px;
 }
 
 .about-card-body {
-  color: #4A4947;
-  font-size: 15px;
-  line-height: 1.75;
+  font-family: 'Libre Baskerville', 'Georgia', serif;
+  color: #B8A88A;
+  font-size: 14px;
+  line-height: 1.8;
 }
 
-.about-placeholder {
-  color: #9A9591;
-  font-style: italic;
+.about-card-body ul {
+  margin-left: 18px;
+}
+
+.about-card-body li {
+  margin-bottom: 6px;
+}
+
+.about-card-body strong {
+  color: #D4C5A9;
+  font-weight: 700;
 }
 
 /* ── Tech stack grid ─────────────────────────────────────────────────────── */
 .stack-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 12px;
 }
 
 .stack-item {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 16px;
-  background: rgba(177, 116, 87, 0.06);
-  border: 1px solid rgba(177, 116, 87, 0.15);
-  border-radius: 10px;
+  gap: 5px;
+  padding: 14px;
+  background: rgba(47, 35, 24, 0.7);
+  border: 1px solid rgba(92, 58, 30, 0.25);
+  border-radius: 6px;
+  transition: border-color 0.18s ease;
+}
+
+.stack-item:hover {
+  border-color: rgba(160, 98, 42, 0.45);
 }
 
 .stack-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.9px;
-  color: #B17457;
-  opacity: 0.75;
+  font-family: 'IM Fell English', 'Georgia', serif;
+  font-size: 9px;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: 0.3px;
+  color: #A0622A;
 }
 
 .stack-value {
-  font-size: 14px;
+  font-family: 'Libre Baskerville', 'Georgia', serif;
+  font-size: 13px;
   font-weight: 600;
-  color: #4A4947;
+  color: #D4C5A9;
+  line-height: 1.4;
 }
 
 /* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
-  .about-main {
-    padding: 40px 24px 60px;
-  }
-
-  .about-name {
-    font-size: 36px;
-  }
-
-  .about-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .about-card--wide,
-  .about-card--full {
-    grid-column: 1;
-  }
-
-  .stack-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  .about-main { padding: 36px 24px 56px; }
+  .about-name { font-size: 36px; }
+  .about-grid { grid-template-columns: 1fr; }
+  .about-card--wide, .about-card--full { grid-column: 1; }
+  .stack-grid { grid-template-columns: repeat(2, 1fr); }
 }
