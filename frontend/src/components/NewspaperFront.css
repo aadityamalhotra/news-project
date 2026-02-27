@@ -8,13 +8,13 @@
 
 /* ── CSS Variables ─────────────────────────────────────────────────────────── */
 :root {
-  --np-paper:       #E8DCC8;   /* aged newsprint background */
-  --np-paper-dark:  #D4C5A9;   /* slightly darker paper for contrast */
-  --np-ink:         #1A1208;   /* near-black warm ink */
-  --np-ink-mid:     #3D2F1F;   /* mid-tone brown-black */
-  --np-ink-faded:   #6B5744;   /* faded ink for secondary text */
-  --np-rule:        #2C1F10;   /* rule/border color */
-  --np-accent:      #5C3A1E;   /* dark sepia accent */
+  --np-paper:       #E8DCC8;
+  --np-paper-dark:  #D4C5A9;
+  --np-ink:         #1A1208;
+  --np-ink-mid:     #3D2F1F;
+  --np-ink-faded:   #6B5744;
+  --np-rule:        #2C1F10;
+  --np-accent:      #5C3A1E;
 }
 
 /* ── Reset & Base ──────────────────────────────────────────────────────────── */
@@ -26,7 +26,6 @@
   position: relative;
 }
 
-/* Subtle paper texture overlay */
 .newspaper::before {
   content: '';
   position: fixed;
@@ -45,7 +44,7 @@
 
 /* ── Masthead ──────────────────────────────────────────────────────────────── */
 .masthead {
-  padding: 0 48px;
+  padding: 0 32px;
   text-align: center;
   border-bottom: 3px double var(--np-rule);
 }
@@ -53,14 +52,13 @@
 .masthead-top-rule {
   height: 5px;
   background: var(--np-rule);
-  margin-bottom: 0;
 }
 
 .masthead-eyebrow {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0 6px;
+  padding: 9px 0 7px;
   border-bottom: 1px solid var(--np-rule);
   border-top: 1px solid var(--np-rule);
   margin-top: 4px;
@@ -69,19 +67,19 @@
 .masthead-eyebrow-left,
 .masthead-eyebrow-right {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 11px;
+  font-size: 13px;
   font-style: italic;
   color: var(--np-ink-faded);
   letter-spacing: 0.5px;
 }
 
 .masthead-title-row {
-  padding: 16px 0 10px;
+  padding: 18px 0 12px;
 }
 
 .masthead-title {
   font-family: 'UnifrakturMaguntia', 'Georgia', serif;
-  font-size: clamp(52px, 8vw, 96px);
+  font-size: clamp(56px, 9vw, 108px);
   font-weight: 400;
   color: var(--np-ink);
   letter-spacing: 2px;
@@ -94,7 +92,7 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 8px 0;
+  padding: 9px 0;
   border-top: 1px solid var(--np-rule);
   border-bottom: 1px solid var(--np-rule);
 }
@@ -108,7 +106,7 @@
 
 .masthead-date {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 13px;
+  font-size: 15px;
   font-style: italic;
   color: var(--np-ink-mid);
   white-space: nowrap;
@@ -120,14 +118,14 @@
   justify-content: flex-end;
   align-items: center;
   gap: 12px;
-  padding: 10px 0;
+  padding: 11px 0;
 }
 
 .masthead-nav-btn {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 13px;
+  font-size: 14px;
   font-style: italic;
-  padding: 6px 18px;
+  padding: 7px 20px;
   background: var(--np-ink);
   color: var(--np-paper);
   border: 1px solid var(--np-rule);
@@ -154,33 +152,32 @@
 .masthead-bottom-rule {
   height: 3px;
   background: var(--np-rule);
-  margin-top: 0;
 }
 
 /* ── Newspaper Body ────────────────────────────────────────────────────────── */
 .newspaper-body {
-  max-width: 1200px;
+  max-width: 1500px;
   margin: 0 auto;
-  padding: 32px 48px 48px;
+  padding: 36px 32px 56px;
 }
 
 /* ── Dividers ──────────────────────────────────────────────────────────────── */
 .divider {
   height: 1px;
   background: var(--np-rule);
-  margin: 20px 0;
+  margin: 24px 0;
 }
 
 .divider--thick {
   height: 3px;
-  margin: 28px 0;
+  margin: 32px 0;
 }
 
 .divider--ornate {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 24px 0;
+  margin: 28px 0;
 }
 
 .divider-line {
@@ -191,11 +188,11 @@
 
 .divider-diamond {
   color: var(--np-accent);
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
 }
 
-/* ── Column rule (vertical separator between columns) ─────────────────────── */
+/* ── Column rule ───────────────────────────────────────────────────────────── */
 .column-rule {
   width: 1px;
   background: var(--np-rule);
@@ -212,31 +209,30 @@
 .layout-medium-pair {
   display: grid;
   grid-template-columns: 1fr 1px 1fr;
-  gap: 0 28px;
+  gap: 0 36px;
   align-items: start;
 }
 
-/* ── Layout: Small trio (2 columns) ───────────────────────────────────────── */
+/* ── Layout: Small pair (2 columns) ───────────────────────────────────────── */
 .layout-small-trio {
   display: grid;
   grid-template-columns: 1fr 1px 1fr;
-  gap: 0 28px;
+  gap: 0 36px;
   align-items: start;
 }
 
 /* ── Article Cards ─────────────────────────────────────────────────────────── */
 .article-card {
-  padding: 4px 0 16px;
+  padding: 4px 0 18px;
 }
 
 .article-meta-top {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 11px;
+  font-size: 13px;
   font-style: italic;
   color: var(--np-ink-faded);
   letter-spacing: 0.3px;
-  margin-bottom: 8px;
-  text-transform: none;
+  margin-bottom: 10px;
 }
 
 .article-source {
@@ -251,12 +247,12 @@
 .article-topic-tag {
   display: inline-block;
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 10px;
+  font-size: 12px;
   font-style: italic;
   color: var(--np-paper);
   background: var(--np-accent);
-  padding: 2px 8px;
-  margin-bottom: 10px;
+  padding: 3px 10px;
+  margin-bottom: 12px;
   letter-spacing: 0.5px;
 }
 
@@ -266,24 +262,24 @@
   font-weight: 700;
   color: var(--np-ink);
   line-height: 1.15;
-  margin: 0 0 6px;
+  margin: 0 0 8px;
   letter-spacing: -0.3px;
 }
 
 .article-headline--lead {
-  font-size: clamp(28px, 4vw, 44px);
+  font-size: clamp(34px, 4.5vw, 52px);
   font-weight: 900;
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
 .article-headline--medium {
-  font-size: clamp(18px, 2.2vw, 24px);
+  font-size: clamp(22px, 2.5vw, 30px);
   font-weight: 700;
 }
 
 .article-headline--small {
-  font-size: clamp(15px, 1.8vw, 19px);
+  font-size: clamp(18px, 2vw, 24px);
   font-weight: 700;
 }
 
@@ -303,8 +299,8 @@
 /* ── Article body text ─────────────────────────────────────────────────────── */
 .article-body {
   font-family: 'Libre Baskerville', 'Georgia', serif;
-  font-size: 14px;
-  line-height: 1.85;
+  font-size: 16px;
+  line-height: 1.9;
   color: var(--np-ink-mid);
   text-align: justify;
   hyphens: auto;
@@ -312,21 +308,21 @@
 }
 
 .article-card--lead .article-body {
-  font-size: 15px;
+  font-size: 17px;
   column-count: 2;
-  column-gap: 32px;
+  column-gap: 40px;
   column-rule: 1px solid var(--np-rule);
 }
 
 .article-card--small .article-body {
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .article-read-more {
   color: var(--np-accent);
   font-style: italic;
   text-decoration: none;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .article-read-more:hover {
@@ -341,7 +337,7 @@
 
 .newspaper-loading-text {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 20px;
+  font-size: 22px;
   font-style: italic;
   color: var(--np-ink-faded);
   letter-spacing: 0.5px;
@@ -363,14 +359,14 @@
 
 .newspaper-error-text {
   font-family: 'Playfair Display', 'Georgia', serif;
-  font-size: 18px;
+  font-size: 20px;
   color: var(--np-ink);
   margin-bottom: 12px;
 }
 
 .newspaper-error-sub {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 14px;
+  font-size: 15px;
   font-style: italic;
   color: var(--np-ink-faded);
 }
@@ -389,14 +385,14 @@
 
 /* ── Footer ────────────────────────────────────────────────────────────────── */
 .newspaper-footer {
-  padding: 0 48px 32px;
-  max-width: 1200px;
+  padding: 0 32px 36px;
+  max-width: 1500px;
   margin: 0 auto;
 }
 
 .newspaper-footer-text {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 11px;
+  font-size: 13px;
   font-style: italic;
   color: var(--np-ink-faded);
   text-align: center;
@@ -406,43 +402,24 @@
 
 /* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .masthead {
-    padding: 0 24px;
-  }
-
-  .newspaper-body {
-    padding: 24px 24px 40px;
-  }
-
-  .newspaper-footer {
-    padding: 0 24px 24px;
-  }
+  .masthead { padding: 0 20px; }
+  .newspaper-body { padding: 24px 20px 40px; }
+  .newspaper-footer { padding: 0 20px 24px; }
 
   .layout-medium-pair,
   .layout-small-trio {
     grid-template-columns: 1fr;
   }
 
-  .column-rule {
-    display: none;
-  }
+  .column-rule { display: none; }
 
-  .article-card--lead .article-body {
-    column-count: 1;
-  }
+  .article-card--lead .article-body { column-count: 1; }
 
   .masthead-eyebrow-left,
-  .masthead-eyebrow-right {
-    font-size: 10px;
-  }
+  .masthead-eyebrow-right { font-size: 11px; }
 }
 
 @media (max-width: 600px) {
-  .masthead-title {
-    font-size: 38px;
-  }
-
-  .masthead-nav-row {
-    justify-content: center;
-  }
+  .masthead-title { font-size: 40px; }
+  .masthead-nav-row { justify-content: center; }
 }

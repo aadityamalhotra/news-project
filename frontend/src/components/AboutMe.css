@@ -1,18 +1,17 @@
-/* AboutMe.css — dark sepia palette */
+/* AboutMe.css — light parchment palette */
 @import url('https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=IM+Fell+English:ital@0;1&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
 
 .about-page {
   width: 100vw;
   min-height: 100vh;
-  background: #1C1510;
-  color: #D4C5A9;
+  background: #EDE3CF;
+  color: #2C1F10;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-/* ── Header ────────────────────────────────────────────────────────────────── */
 .about-header {
   position: sticky;
   top: 0;
@@ -21,17 +20,17 @@
   align-items: center;
   gap: 20px;
   padding: 14px 48px;
-  background: rgba(28, 21, 16, 0.97);
+  background: rgba(237, 227, 207, 0.97);
   backdrop-filter: blur(10px);
-  border-bottom: 2px solid #5C3A1E;
+  border-bottom: 2px solid #8B6340;
 }
 
 .back-btn {
   padding: 8px 18px;
   background: transparent;
-  border: 1.5px solid #5C3A1E;
+  border: 1.5px solid #8B6340;
   border-radius: 4px;
-  color: #8B7355;
+  color: #6B4F30;
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 13px;
   font-style: italic;
@@ -42,20 +41,19 @@
 }
 
 .back-btn:hover {
-  background: #A0622A;
-  color: #D4C5A9;
-  border-color: #A0622A;
+  background: #7A4A1E;
+  color: #EDE3CF;
+  border-color: #7A4A1E;
 }
 
 .about-site-title {
   font-family: 'UnifrakturMaguntia', 'Georgia', serif;
   font-size: 20px;
   font-weight: 400;
-  color: #8B7355;
+  color: #6B4F30;
   letter-spacing: 0.5px;
 }
 
-/* ── Main content ───────────────────────────────────────────────────────────── */
 .about-main {
   flex: 1;
   max-width: 1100px;
@@ -64,18 +62,17 @@
   padding: 56px 48px 80px;
 }
 
-/* ── Hero ───────────────────────────────────────────────────────────────────── */
 .about-hero {
   margin-bottom: 48px;
   padding-bottom: 36px;
-  border-bottom: 1px solid rgba(92, 58, 30, 0.4);
+  border-bottom: 1px solid rgba(139, 99, 64, 0.3);
 }
 
 .about-name {
   font-family: 'Playfair Display', 'Georgia', serif;
   font-size: 50px;
   font-weight: 900;
-  color: #D4C5A9;
+  color: #2C1F10;
   letter-spacing: -0.5px;
   margin-bottom: 10px;
   line-height: 1.1;
@@ -85,12 +82,11 @@
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 18px;
   font-style: italic;
-  color: #A0622A;
+  color: #7A4A1E;
   font-weight: 400;
   letter-spacing: 0.3px;
 }
 
-/* ── Card grid ──────────────────────────────────────────────────────────────── */
 .about-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -98,16 +94,16 @@
 }
 
 .about-card {
-  background: #251C14;
-  border: 1px solid rgba(92, 58, 30, 0.35);
+  background: rgba(226, 213, 187, 0.6);
+  border: 1px solid rgba(139, 99, 64, 0.25);
   border-radius: 10px;
   padding: 28px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .about-card:hover {
-  border-color: rgba(160, 98, 42, 0.5);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-color: rgba(122, 74, 30, 0.45);
+  box-shadow: 0 4px 20px rgba(44, 31, 16, 0.08);
 }
 
 .about-card--wide  { grid-column: 1 / -1; }
@@ -117,36 +113,23 @@
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 10px;
   font-style: italic;
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0.5px;
-  color: #A0622A;
+  color: #7A4A1E;
   margin-bottom: 18px;
-  border-bottom: 1px solid rgba(92, 58, 30, 0.3);
+  border-bottom: 1px solid rgba(139, 99, 64, 0.25);
   padding-bottom: 8px;
 }
 
 .about-card-body {
   font-family: 'Libre Baskerville', 'Georgia', serif;
-  color: #B8A88A;
+  color: #3D2F1F;
   font-size: 14px;
   line-height: 1.8;
 }
 
-.about-card-body ul {
-  margin-left: 18px;
-}
+.about-card-body ul { margin-left: 18px; }
+.about-card-body li { margin-bottom: 6px; }
+.about-card-body strong { color: #2C1F10; font-weight: 700; }
 
-.about-card-body li {
-  margin-bottom: 6px;
-}
-
-.about-card-body strong {
-  color: #D4C5A9;
-  font-weight: 700;
-}
-
-/* ── Tech stack grid ─────────────────────────────────────────────────────── */
 .stack-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -158,34 +141,29 @@
   flex-direction: column;
   gap: 5px;
   padding: 14px;
-  background: rgba(47, 35, 24, 0.7);
-  border: 1px solid rgba(92, 58, 30, 0.25);
+  background: rgba(216, 201, 168, 0.5);
+  border: 1px solid rgba(139, 99, 64, 0.2);
   border-radius: 6px;
   transition: border-color 0.18s ease;
 }
 
-.stack-item:hover {
-  border-color: rgba(160, 98, 42, 0.45);
-}
+.stack-item:hover { border-color: rgba(122, 74, 30, 0.4); }
 
 .stack-label {
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 9px;
   font-style: italic;
-  text-transform: none;
-  letter-spacing: 0.3px;
-  color: #A0622A;
+  color: #7A4A1E;
 }
 
 .stack-value {
   font-family: 'Libre Baskerville', 'Georgia', serif;
   font-size: 13px;
   font-weight: 600;
-  color: #D4C5A9;
+  color: #2C1F10;
   line-height: 1.4;
 }
 
-/* ── Responsive ──────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .about-main { padding: 36px 24px 56px; }
   .about-name { font-size: 36px; }

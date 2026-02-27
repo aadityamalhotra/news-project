@@ -8,21 +8,20 @@ body {
   font-family: 'Libre Baskerville', 'Georgia', 'Times New Roman', serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #1C1510;
-  color: #D4C5A9;
+  background: #EDE3CF;
+  color: #2C1F10;
 }
 
-/* ── CSS variables — shared palette ──────────────────────────────────────── */
 :root {
-  --app-bg:         #1C1510;   /* deep dark sepia */
-  --app-surface:    #251C14;   /* slightly lighter surface */
-  --app-surface-2:  #2F2318;   /* sidebar, panels */
-  --app-border:     #5C3A1E;   /* sepia brown border */
-  --app-border-dim: #3D2716;   /* dimmed border */
-  --app-text:       #D4C5A9;   /* warm off-white text */
-  --app-text-dim:   #8B7355;   /* dimmed text */
-  --app-accent:     #A0622A;   /* amber-brown accent (replaces rust) */
-  --app-accent-hi:  #C47F3A;   /* lighter accent for hover */
+  --app-bg:         #EDE3CF;
+  --app-surface:    #E2D5BB;
+  --app-surface-2:  #D8C9A8;
+  --app-border:     #8B6340;
+  --app-border-dim: #B08860;
+  --app-text:       #2C1F10;
+  --app-text-dim:   #6B4F30;
+  --app-accent:     #7A4A1E;
+  --app-accent-hi:  #A0622A;
 }
 
 .App {
@@ -80,7 +79,6 @@ body {
   font-weight: 400;
 }
 
-/* About / nav button */
 .about-btn {
   padding: 8px 20px;
   background: transparent;
@@ -90,7 +88,6 @@ body {
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 13px;
   font-style: italic;
-  font-weight: 400;
   cursor: pointer;
   transition: all 0.22s ease;
   letter-spacing: 0.3px;
@@ -98,7 +95,7 @@ body {
 
 .about-btn:hover {
   background: var(--app-accent);
-  color: var(--app-text);
+  color: #EDE3CF;
   border-color: var(--app-accent);
 }
 
@@ -110,7 +107,6 @@ body {
   min-height: 0;
 }
 
-/* ── Right panel ───────────────────────────────────────────────────────────── */
 .right-panel {
   flex: 1;
   display: flex;
@@ -188,9 +184,9 @@ body {
 }
 
 .article-panel-list::-webkit-scrollbar { width: 5px; }
-.article-panel-list::-webkit-scrollbar-track { background: rgba(92, 58, 30, 0.15); }
-.article-panel-list::-webkit-scrollbar-thumb { background: rgba(160, 98, 42, 0.4); border-radius: 3px; }
-.article-panel-list::-webkit-scrollbar-thumb:hover { background: rgba(160, 98, 42, 0.65); }
+.article-panel-list::-webkit-scrollbar-track { background: rgba(139, 99, 64, 0.1); }
+.article-panel-list::-webkit-scrollbar-thumb { background: rgba(122, 74, 30, 0.35); border-radius: 3px; }
+.article-panel-list::-webkit-scrollbar-thumb:hover { background: rgba(122, 74, 30, 0.6); }
 
 .article-panel-item {
   display: flex;
@@ -205,7 +201,7 @@ body {
 }
 
 .article-panel-item:hover {
-  background: rgba(92, 58, 30, 0.25);
+  background: rgba(139, 99, 64, 0.12);
   border-color: var(--app-border-dim);
   transform: translateX(3px);
 }
@@ -220,10 +216,7 @@ body {
   text-align: right;
 }
 
-.article-panel-body {
-  flex: 1;
-  min-width: 0;
-}
+.article-panel-body { flex: 1; min-width: 0; }
 
 .article-panel-item-title {
   font-size: 14px;
@@ -240,10 +233,7 @@ body {
   color: var(--app-accent-hi);
 }
 
-.article-panel-meta {
-  font-size: 11px;
-  color: var(--app-text-dim);
-}
+.article-panel-meta { font-size: 11px; color: var(--app-text-dim); }
 
 .article-panel-source {
   font-weight: 600;
@@ -251,9 +241,7 @@ body {
   opacity: 0.85;
 }
 
-.article-panel-author {
-  font-style: italic;
-}
+.article-panel-author { font-style: italic; }
 
 .article-panel-arrow {
   font-size: 13px;
@@ -263,11 +251,9 @@ body {
   flex-shrink: 0;
 }
 
-.article-panel-item:hover .article-panel-arrow {
-  opacity: 0.7;
-}
+.article-panel-item:hover .article-panel-arrow { opacity: 0.7; }
 
-/* ── Loading State ─────────────────────────────────────────────────────────── */
+/* ── Loading ───────────────────────────────────────────────────────────────── */
 .loading-overlay {
   position: absolute;
   inset: 0;
@@ -275,14 +261,14 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: rgba(28, 21, 16, 0.95);
+  background: rgba(237, 227, 207, 0.95);
   z-index: 1000;
 }
 
 .loading-spinner {
   width: 56px;
   height: 56px;
-  border: 3px solid rgba(92, 58, 30, 0.3);
+  border: 3px solid rgba(139, 99, 64, 0.25);
   border-top-color: var(--app-accent);
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -304,14 +290,14 @@ body {
   color: var(--app-accent) !important;
 }
 
-/* ── Error State ───────────────────────────────────────────────────────────── */
+/* ── Error ─────────────────────────────────────────────────────────────────── */
 .error-overlay {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(28, 21, 16, 0.95);
+  background: rgba(237, 227, 207, 0.95);
   z-index: 1000;
 }
 
@@ -340,7 +326,7 @@ body {
 
 .error-box button {
   background: var(--app-accent);
-  color: var(--app-text);
+  color: #EDE3CF;
   border: none;
   padding: 12px 32px;
   border-radius: 6px;

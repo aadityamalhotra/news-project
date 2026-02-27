@@ -1,15 +1,14 @@
-/* Sidebar.css — dark sepia palette */
+/* Sidebar.css — light parchment palette */
 @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Playfair+Display:wght@700&family=Libre+Baskerville:wght@400;700&display=swap');
 
 .sidebar {
   width: 340px;
-  background: #251C14;
-  border-right: 2px solid #5C3A1E;
+  background: #E2D5BB;
+  border-right: 2px solid #8B6340;
   display: flex;
   flex-direction: column;
-  position: relative;
   overflow: hidden;
-  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 2px 0 12px rgba(44, 31, 16, 0.1);
   flex-shrink: 0;
 }
 
@@ -24,11 +23,10 @@
 }
 
 .sidebar-content::-webkit-scrollbar { width: 5px; }
-.sidebar-content::-webkit-scrollbar-track { background: rgba(92, 58, 30, 0.1); }
-.sidebar-content::-webkit-scrollbar-thumb { background: rgba(160, 98, 42, 0.4); border-radius: 3px; }
-.sidebar-content::-webkit-scrollbar-thumb:hover { background: rgba(160, 98, 42, 0.65); }
+.sidebar-content::-webkit-scrollbar-track { background: rgba(139, 99, 64, 0.1); }
+.sidebar-content::-webkit-scrollbar-thumb { background: rgba(122, 74, 30, 0.35); border-radius: 3px; }
+.sidebar-content::-webkit-scrollbar-thumb:hover { background: rgba(122, 74, 30, 0.6); }
 
-/* ── Sections ──────────────────────────────────────────────────────────────── */
 .sidebar-section {
   display: flex;
   flex-direction: column;
@@ -41,22 +39,20 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  color: #A0622A;
+  color: #7A4A1E;
   margin-bottom: 2px;
 }
 
-/* ── Load button ───────────────────────────────────────────────────────────── */
 .generate-button {
   width: 100%;
   padding: 13px;
-  background: #3D2716;
-  border: 1.5px solid #5C3A1E;
+  background: #2C1F10;
+  border: 1.5px solid #8B6340;
   border-radius: 6px;
-  color: #D4C5A9;
+  color: #EDE3CF;
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 14px;
   font-style: italic;
-  font-weight: 400;
   cursor: pointer;
   transition: all 0.25s ease;
   display: flex;
@@ -67,9 +63,9 @@
 }
 
 .generate-button:hover:not(:disabled) {
-  background: #A0622A;
-  border-color: #C47F3A;
-  color: #F2E8C9;
+  background: #7A4A1E;
+  border-color: #A0622A;
+  color: #EDE3CF;
 }
 
 .generate-button:disabled {
@@ -80,22 +76,21 @@
 .button-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(212, 197, 169, 0.25);
-  border-top-color: #D4C5A9;
+  border: 2px solid rgba(237, 227, 207, 0.3);
+  border-top-color: #EDE3CF;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── Date picker ────────────────────────────────────────────────────────────── */
 .date-picker-toggle {
   width: 100%;
   padding: 10px;
-  background: rgba(92, 58, 30, 0.2);
-  border: 1px solid #5C3A1E;
+  background: rgba(139, 99, 64, 0.12);
+  border: 1px solid #8B6340;
   border-radius: 6px;
-  color: #8B7355;
+  color: #6B4F30;
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 12px;
   font-style: italic;
@@ -104,8 +99,8 @@
 }
 
 .date-picker-toggle:hover:not(:disabled) {
-  background: rgba(92, 58, 30, 0.35);
-  color: #D4C5A9;
+  background: rgba(139, 99, 64, 0.22);
+  color: #2C1F10;
 }
 
 .date-picker-toggle:disabled {
@@ -114,8 +109,8 @@
 }
 
 .date-picker {
-  background: rgba(47, 35, 24, 0.7);
-  border: 1px solid rgba(92, 58, 30, 0.4);
+  background: rgba(216, 201, 168, 0.5);
+  border: 1px solid rgba(139, 99, 64, 0.3);
   border-radius: 6px;
   padding: 12px;
 }
@@ -124,16 +119,11 @@
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 10px;
   font-style: italic;
-  font-weight: 400;
-  text-transform: none;
-  letter-spacing: 0.3px;
-  color: #A0622A;
+  color: #7A4A1E;
   margin-bottom: 7px;
 }
 
-.date-picker-label--warn {
-  color: #7A5830;
-}
+.date-picker-label--warn { color: #9A7040; }
 
 .date-list {
   display: flex;
@@ -155,29 +145,28 @@
 }
 
 .date-option--ready {
-  background: rgba(92, 58, 30, 0.2);
-  border: 1px solid rgba(92, 58, 30, 0.3);
-  color: #D4C5A9;
+  background: rgba(139, 99, 64, 0.12);
+  border: 1px solid rgba(139, 99, 64, 0.25);
+  color: #2C1F10;
 }
 
 .date-option--ready:hover {
-  background: rgba(160, 98, 42, 0.3);
-  border-color: #A0622A;
+  background: rgba(122, 74, 30, 0.2);
+  border-color: #7A4A1E;
 }
 
 .date-option--uncached {
-  background: rgba(61, 39, 22, 0.15);
-  border: 1px dashed rgba(92, 58, 30, 0.35);
-  color: #6B5744;
+  background: rgba(154, 112, 64, 0.07);
+  border: 1px dashed rgba(154, 112, 64, 0.35);
+  color: #9A7040;
   opacity: 0.8;
 }
 
 .date-option--uncached:hover {
   opacity: 1;
-  background: rgba(61, 39, 22, 0.28);
+  background: rgba(154, 112, 64, 0.15);
 }
 
-/* ── Clusters list ──────────────────────────────────────────────────────────── */
 .clusters-list {
   display: flex;
   flex-direction: column;
@@ -189,8 +178,8 @@
   align-items: center;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(47, 35, 24, 0.6);
-  border: 1px solid rgba(92, 58, 30, 0.25);
+  background: rgba(216, 201, 168, 0.5);
+  border: 1px solid rgba(139, 99, 64, 0.2);
   border-radius: 5px;
   cursor: pointer;
   transition: all 0.18s ease;
@@ -199,14 +188,14 @@
 }
 
 .cluster-item:hover {
-  background: rgba(92, 58, 30, 0.35);
-  border-color: #5C3A1E;
+  background: rgba(139, 99, 64, 0.18);
+  border-color: #8B6340;
   transform: translateX(3px);
 }
 
 .cluster-item.selected {
-  background: rgba(160, 98, 42, 0.2);
-  border-color: #A0622A;
+  background: rgba(122, 74, 30, 0.15);
+  border-color: #7A4A1E;
   border-width: 1.5px;
 }
 
@@ -215,19 +204,16 @@
   height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 0 6px currentColor;
+  box-shadow: 0 0 5px currentColor;
 }
 
-.cluster-info {
-  flex: 1;
-  min-width: 0;
-}
+.cluster-info { flex: 1; min-width: 0; }
 
 .cluster-name {
   font-family: 'Libre Baskerville', 'Georgia', serif;
   font-size: 12px;
   font-weight: 600;
-  color: #D4C5A9;
+  color: #2C1F10;
   margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -238,22 +224,22 @@
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 10px;
   font-style: italic;
-  color: #A0622A;
+  color: #7A4A1E;
 }
 
 .cluster-selected-indicator {
   font-size: 10px;
-  color: #A0622A;
+  color: #7A4A1E;
   flex-shrink: 0;
 }
 
 .clear-selection {
   width: 100%;
   padding: 8px;
-  background: rgba(92, 58, 30, 0.15);
-  border: 1px solid #5C3A1E;
+  background: rgba(139, 99, 64, 0.1);
+  border: 1px solid #8B6340;
   border-radius: 5px;
-  color: #8B7355;
+  color: #6B4F30;
   font-family: 'IM Fell English', 'Georgia', serif;
   font-size: 11px;
   font-style: italic;
@@ -263,16 +249,15 @@
 }
 
 .clear-selection:hover {
-  background: rgba(92, 58, 30, 0.28);
-  color: #D4C5A9;
+  background: rgba(139, 99, 64, 0.2);
+  color: #2C1F10;
 }
 
-/* ── Responsive ────────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
     max-height: 40vh;
     border-right: none;
-    border-bottom: 2px solid #5C3A1E;
+    border-bottom: 2px solid #8B6340;
   }
 }

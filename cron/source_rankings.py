@@ -9,19 +9,19 @@ Rank 1 = most authoritative. Sources not in this list get rank 999.
 """
 
 SOURCE_RANKINGS = {
-    # Tier 1 — Global wire services & flagship broadcasters
-    "associated-press":         1,
-    "bbc-news":                 2,
+    # Tier 1 — Top editorial authority
+    "bbc-news":                 1,
+    "usa-today":                2,
     "al-jazeera-english":       3,
-    "reuters":                  4,   # may appear via scraping even if not in sources list
-
-    # Tier 2 — Major national broadcasters & newspapers of record
+    "associated-press":         4,
     "abc-news-au":              5,
-    "cbc-news":                 6,
-    "rte":                      7,
-    "nbc-news":                 8,
-    "cbs-news":                 9,
-    "usa-today":               10,
+    "reuters":                  6,
+    "cbc-news":                 7,
+    "cbs-news":                 8,
+
+    # Tier 2 — Major national broadcasters
+    "rte":                      9,
+    "nbc-news":                10,
 
     # Tier 3 — Business & financial press
     "financial-post":          11,

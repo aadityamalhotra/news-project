@@ -134,7 +134,7 @@ import umap
 from sklearn.cluster import DBSCAN
 from supabase import create_client
 
-from source_rankings import get_source_rank
+from source_rankings import get_source_rank, DEFAULT_RANK
 
 # ──────────────────────────────────────────────────────────────────────────────
 # CONFIGURATION
@@ -391,22 +391,49 @@ def _relevance_score(title: str, label: str, model) -> float:
 # ──────────────────────────────────────────────────────────────────────────────
 # HIGHLIGHTS SELECTION & SUMMARIZATION
 # ──────────────────────────────────────────────────────────────────────────────
+def _has_usable_content(row) -> bool:
+    """Return True if an article row has clean, readable full_content."""
+    content = str(row.get("full_content", "") or "").strip()
+    return (
+        bool(content)
+        and len(content) > 200
+        and "consent" not in content.lower()[:100]
+        and content != "Blocked by Consent Wall"
+    )
+
+
+def _source_id_from_name(name: str) -> str:
+    """Convert display source name to a source-id style slug for rank lookup."""
+    return name.lower().replace(" ", "-").replace("'", "").replace(".", "")
+
+
 def _select_highlight_articles(df: pd.DataFrame, clusters_out: list, n: int = NUM_HIGHLIGHTS) -> list:
     """
     Select the top-N highlight articles for the newspaper front page.
 
-    Strategy:
-      1. Take the N largest clusters (by article_count), excluding noise cluster (-1)
-      2. Within each cluster, rank articles by source authority (source_rankings.py)
-      3. Pick the highest-ranked article that has usable full_content
-      4. Fall back to next-best source if content is missing/blocked
+    Two-fold strategy:
+      1. Take the N largest clusters (by article_count), excluding noise cluster (-1).
+      2. Within each cluster, articles are sorted by relevance_score descending
+         (semantic closeness to the cluster centroid — already computed).
+         We walk through this ordered list and find the first article whose
+         source_rank is the best (lowest) among those we have seen so far.
+         Concretely: we find the article with the best source rank that also
+         has usable full_content, using relevance order as the tiebreaker within
+         equally-ranked sources.
+      3. If no article has usable content, fall back to the best source rank
+         regardless of content quality.
     """
-    # Sort clusters by article count descending, exclude uncategorized
     ranked_clusters = sorted(
         [c for c in clusters_out if c["cluster_id"] != -1],
         key=lambda c: c["article_count"],
         reverse=True,
     )[:n]
+
+    # Build a relevance lookup from the clusters_out relevance_map (if present)
+    # At this point in the pipeline, relevance_map has already been merged into
+    # all_relevance and stripped from clusters_out — but the df itself has
+    # relevance_score attached per-row from articles_out construction.
+    # We re-use whatever is in the df directly.
 
     highlights = []
 
@@ -414,33 +441,48 @@ def _select_highlight_articles(df: pd.DataFrame, clusters_out: list, n: int = NU
         cid = cluster["cluster_id"]
         cluster_df = df[df["cluster_id"] == cid].copy()
 
-        # Attach source rank to each article in this cluster
+        # Attach source rank
         cluster_df["_source_rank"] = cluster_df["source_name"].apply(
-            lambda name: get_source_rank(
-                # Convert display name to source-id format for lookup
-                name.lower().replace(" ", "-").replace("'", "").replace(".", "")
-            )
+            lambda name: get_source_rank(_source_id_from_name(name))
         )
 
-        # Sort by source rank ascending (lower = more authoritative)
-        cluster_df = cluster_df.sort_values("_source_rank")
+        # Sort primarily by relevance_score descending (most central articles first),
+        # secondarily by source rank ascending as a tiebreaker
+        if "relevance_score" in cluster_df.columns:
+            cluster_df = cluster_df.sort_values(
+                ["relevance_score", "_source_rank"],
+                ascending=[False, True],
+            )
+        else:
+            cluster_df = cluster_df.sort_values("_source_rank")
 
-        # Pick first article with usable content
+        # Walk the relevance-ordered list; track the best source rank seen.
+        # Select the first article that improves (or matches) the best source
+        # rank seen AND has usable content.
+        # This means: among all articles ordered by centrality, pick the one
+        # from the most authoritative source, using centrality as tiebreaker.
         selected = None
-        for _, row in cluster_df.iterrows():
-            content = str(row.get("full_content", "") or "").strip()
-            if (
-                content
-                and len(content) > 200
-                and "consent" not in content.lower()[:100]
-                and content != "Blocked by Consent Wall"
-            ):
-                selected = row
-                break
+        best_rank_seen = DEFAULT_RANK + 1
 
-        # Fallback: if no article has good content, just take the best-ranked one
+        for _, row in cluster_df.iterrows():
+            row_rank = int(row["_source_rank"])
+            if row_rank < best_rank_seen:
+                best_rank_seen = row_rank
+                if _has_usable_content(row):
+                    selected = row
+                    break  # found best authoritative source with good content
+
+        # Fallback pass: if no top-source article had usable content,
+        # walk again purely by source rank and take the first with usable content
+        if selected is None:
+            for _, row in cluster_df.sort_values("_source_rank").iterrows():
+                if _has_usable_content(row):
+                    selected = row
+                    break
+
+        # Last resort: best source rank regardless of content
         if selected is None and len(cluster_df) > 0:
-            selected = cluster_df.iloc[0]
+            selected = cluster_df.sort_values("_source_rank").iloc[0]
 
         if selected is not None:
             highlights.append({
