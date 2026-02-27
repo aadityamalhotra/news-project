@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './NewspaperFront.css';
@@ -39,13 +39,11 @@ function Divider({ thick = false, ornate = false }) {
 
 // Individual article card — layout variant controlled by `variant` prop
 function ArticleCard({ article, variant = 'medium' }) {
-  const [expanded, setExpanded] = useState(false);
-
-  // Word-count based truncation: show first ~120 words, then link
+  // Word-count based truncation: show first N words, then link to full article
   const words = article.summary ? article.summary.split(' ') : [];
   const WORD_LIMIT = variant === 'lead' ? 160 : variant === 'medium' ? 100 : 70;
   const needsTruncation = words.length > WORD_LIMIT;
-  const displayText = needsTruncation && !expanded
+  const displayText = needsTruncation
     ? words.slice(0, WORD_LIMIT).join(' ')
     : article.summary;
 
