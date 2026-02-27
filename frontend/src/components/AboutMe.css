@@ -32,7 +32,7 @@
   border-radius: 4px;
   color: #6B4F30;
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 13px;
+  font-size: 15px;
   font-style: italic;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -111,7 +111,7 @@
 
 .about-card-title {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 10px;
+  font-size: 15px;
   font-style: italic;
   color: #7A4A1E;
   margin-bottom: 18px;
@@ -122,7 +122,7 @@
 .about-card-body {
   font-family: 'Libre Baskerville', 'Georgia', serif;
   color: #3D2F1F;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.8;
 }
 
@@ -151,14 +151,14 @@
 
 .stack-label {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 9px;
+  font-size: 15px;
   font-style: italic;
   color: #7A4A1E;
 }
 
 .stack-value {
   font-family: 'Libre Baskerville', 'Georgia', serif;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: #2C1F10;
   line-height: 1.4;

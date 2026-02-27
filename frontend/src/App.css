@@ -73,7 +73,7 @@ body {
 
 .date-display {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 12px;
+  font-size: 15px;
   font-style: italic;
   color: var(--app-accent);
   font-weight: 400;
@@ -86,7 +86,7 @@ body {
   border-radius: 4px;
   color: var(--app-text-dim);
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 13px;
+  font-size: 15px;
   font-style: italic;
   cursor: pointer;
   transition: all 0.22s ease;
@@ -159,7 +159,7 @@ body {
 
 .article-panel-title {
   font-family: 'Playfair Display', 'Georgia', serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--app-text);
   text-transform: uppercase;
@@ -171,7 +171,7 @@ body {
 }
 
 .article-panel-count {
-  font-size: 11px;
+  font-size: 15px;
   color: var(--app-accent);
   font-weight: 600;
   white-space: nowrap;
@@ -207,7 +207,7 @@ body {
 }
 
 .article-panel-rank {
-  font-size: 11px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--app-accent);
   opacity: 0.6;
@@ -219,7 +219,7 @@ body {
 .article-panel-body { flex: 1; min-width: 0; }
 
 .article-panel-item-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   color: var(--app-text);
   line-height: 1.4;
@@ -233,7 +233,7 @@ body {
   color: var(--app-accent-hi);
 }
 
-.article-panel-meta { font-size: 11px; color: var(--app-text-dim); }
+.article-panel-meta { font-size: 15px; color: var(--app-text-dim); }
 
 .article-panel-source {
   font-weight: 600;
@@ -244,7 +244,7 @@ body {
 .article-panel-author { font-style: italic; }
 
 .article-panel-arrow {
-  font-size: 13px;
+  font-size: 15px;
   color: var(--app-accent);
   opacity: 0;
   transition: opacity 0.18s ease;
@@ -286,7 +286,7 @@ body {
 }
 
 .loading-subtext {
-  font-size: 13px !important;
+  font-size: 15px !important;
   color: var(--app-accent) !important;
 }
 
@@ -320,7 +320,7 @@ body {
 .error-box p {
   color: var(--app-text);
   margin-bottom: 24px;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.7;
 }
 
@@ -330,7 +330,7 @@ body {
   border: none;
   padding: 12px 32px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s ease;

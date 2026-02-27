@@ -9,7 +9,7 @@ export default function AboutMe() {
     <div className="about-page">
       <header className="about-header">
         <button className="back-btn" onClick={() => navigate('/')}>
-          ← Back to Visualization
+          ← Back to Main Page
         </button>
         <h1 className="about-site-title">Global News Visualization</h1>
       </header>

@@ -29,7 +29,7 @@
 
 .tooltip-title {
   font-family: 'Libre Baskerville', 'Georgia', serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: #EDE3CF;
   line-height: 1.5;
@@ -38,7 +38,7 @@
 
 .tooltip-source {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 12px;
+  font-size: 15px;
   font-style: italic;
   color: #B08860;
 }
@@ -67,7 +67,7 @@
 
 .info-label {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 10px;
+  font-size: 15px;
   font-style: italic;
   color: #6B4F30;
   letter-spacing: 0.3px;
@@ -96,7 +96,7 @@
 
 .visualization-controls p {
   font-family: 'IM Fell English', 'Georgia', serif;
-  font-size: 12px;
+  font-size: 15px;
   font-style: italic;
   color: #6B4F30;
   margin: 0;
