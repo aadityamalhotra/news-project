@@ -1,106 +1,182 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import './components/AboutMe.css';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import './App.css';
+import NewsVisualization from './components/NewsVisualization';
+import Sidebar from './components/Sidebar';
+import AboutMe from './components/AboutMe';
+import NewspaperFront from './components/NewspaperFront';
+import axios from 'axios';
 
-export default function AboutMe() {
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
+// ─── Visualization page (original MainPage, now at /viz) ─────────────────────
+function VizPage() {
   const navigate = useNavigate();
+  const [articles, setArticles] = useState([]);
+  const [clusters, setClusters] = useState([]);
+  const [selectedCluster, setSelectedCluster] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [visualizationDate, setVisualizationDate] = useState(null);
+  const [availableDates, setAvailableDates] = useState([]);
+  const [uncachedDates, setUncachedDates] = useState([]);
+
+  useEffect(() => {
+    fetchAvailableDates();
+    loadVisualization();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const fetchAvailableDates = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/available-dates`);
+      setAvailableDates(response.data.dates || []);
+      setUncachedDates(response.data.uncached_dates || []);
+    } catch (err) {
+      console.error('Error fetching dates:', err);
+    }
+  };
+
+  const loadVisualization = async (date = null) => {
+    setLoading(true);
+    setError(null);
+    setSelectedCluster(null);
+    try {
+      const url = date
+        ? `${API_BASE_URL}/api/load-visualization?date=${date}`
+        : `${API_BASE_URL}/api/load-visualization`;
+      const response = await axios.get(url);
+      setArticles(response.data.articles);
+      setClusters(response.data.clusters);
+      setVisualizationDate(response.data.date);
+      setLoading(false);
+    } catch (err) {
+      const detail = err.response?.data?.detail || 'Failed to load visualization';
+      setError(detail);
+      setLoading(false);
+    }
+  };
+
+  const handleClusterSelect = (clusterId) => {
+    setSelectedCluster(prev => prev === clusterId ? null : clusterId);
+  };
+
+  const selectedClusterArticles = selectedCluster !== null
+    ? [...articles.filter(a => a.cluster_id === selectedCluster)]
+        .sort((a, b) => (b.relevance_score ?? 0) - (a.relevance_score ?? 0))
+    : [];
+
+  const selectedClusterInfo = clusters.find(c => c.cluster_id === selectedCluster);
 
   return (
-    <div className="about-page">
-      <header className="about-header">
-        <button className="back-btn" onClick={() => navigate('/')}>
-          ← Back to Front Page
-        </button>
-        <h1 className="about-site-title">Tomorrow's Archive</h1>
+    <div className="App">
+      <header className="app-header">
+        <div className="header-left">
+          <h1 className="app-header-title" onClick={() => navigate('/')}>
+            Tomorrow's Archive
+          </h1>
+          {visualizationDate && (
+            <p className="date-display">Showing news from {visualizationDate}</p>
+          )}
+        </div>
+        <div className="header-right">
+          <button className="about-btn" onClick={() => navigate('/about')}>
+            About
+          </button>
+        </div>
       </header>
 
-      <main className="about-main">
-        <section className="about-hero">
-          <h2 className="about-name">Aaditya Malhotra</h2>
-          <p className="about-tagline">Data Engineer · Pipeline Architect · System Builder</p>
-        </section>
+      <div className="main-container">
+        <Sidebar
+          clusters={clusters}
+          selectedCluster={selectedCluster}
+          onClusterSelect={handleClusterSelect}
+          onGenerate={loadVisualization}
+          loading={loading}
+          availableDates={availableDates}
+          uncachedDates={uncachedDates}
+        />
 
-        <div className="about-grid">
-
-          <div className="about-card about-card--wide">
-            <h3 className="about-card-title">About Me</h3>
-            <div className="about-card-body">
-              <p>
-                I'm passionate about building intelligent data systems that transform raw information into actionable insights.
-                My focus is on designing and automating end-to-end data pipelines that are robust, scalable, and production-ready.
-                I thrive at the intersection of data engineering and machine learning, where I can architect systems that not only
-                move and process data efficiently, but also extract meaningful patterns and deliver real-time intelligence.
-              </p>
-              <p style={{ marginTop: '12px' }}>
-                This project showcases my approach to building complete data products—from ingestion and processing to
-                visualization and deployment. I believe the best way to demonstrate technical skills is through
-                end-to-end implementations that solve real problems.
-              </p>
-            </div>
-          </div>
-
-          <div className="about-card">
-            <h3 className="about-card-title">What I Built</h3>
-            <div className="about-card-body">
-              <p>A fully automated news intelligence platform that processes thousands of global articles daily. The system:</p>
-              <ul style={{ marginTop: '10px', marginLeft: '18px' }}>
-                <li><strong>Ingests</strong> news from 20+ international sources via API with intelligent rate-limiting and anti-blocking techniques</li>
-                <li><strong>Scrapes</strong> full article content using custom browser configurations to bypass consent walls</li>
-                <li><strong>Stores</strong> structured data in PostgreSQL with deduplication and conflict handling</li>
-                <li><strong>Clusters</strong> articles by semantic similarity using sentence transformers, UMAP dimensionality reduction, and DBSCAN</li>
-                <li><strong>Labels</strong> each cluster automatically using Ollama (Llama 3.2) with strict prompts for single-topic identification</li>
-                <li><strong>Visualizes</strong> in interactive 3D using React and Three.js, with dynamic camera controls and cluster exploration</li>
-                <li><strong>Orchestrates</strong> the entire pipeline through GitHub Actions with automatic daily scheduling and chained execution</li>
-              </ul>
-              <p style={{ marginTop: '10px' }}>
-                The frontend loads pre-processed cache files instantly — no real-time clustering or LLM calls during user interaction.
-              </p>
-            </div>
-          </div>
-
-          <div className="about-card">
-            <h3 className="about-card-title">What This Taught Me</h3>
-            <div className="about-card-body">
-              <p>This project pushed me to connect multiple technical domains into a cohesive system:</p>
-              <ul style={{ marginTop: '10px', marginLeft: '18px' }}>
-                <li><strong>Pipeline orchestration:</strong> Designing reliable CI/CD workflows with proper task dependencies and error recovery</li>
-                <li><strong>Data engineering at scale:</strong> Handling thousands of articles with efficient batch processing and database optimization</li>
-                <li><strong>ML/NLP integration:</strong> Fine-tuning embedding models and clustering algorithms for real-world noisy data</li>
-                <li><strong>LLM prompt engineering:</strong> Crafting strict prompts that produce consistent, structured outputs from generative models</li>
-                <li><strong>Full-stack development:</strong> Building responsive frontends that visualize complex data while maintaining performance</li>
-                <li><strong>Production thinking:</strong> Pre-processing heavy computations, implementing caching strategies, and optimizing for user experience</li>
-                <li><strong>Cloud architecture:</strong> Connecting Supabase, Render, and Vercel into a cohesive serverless stack with GitHub Actions as the orchestration layer</li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="about-card about-card--full">
-            <h3 className="about-card-title">Tech Stack</h3>
-            <div className="about-card-body stack-grid">
-              {[
-                { label: 'Orchestration', value: 'GitHub Actions (scheduled workflows)' },
-                { label: 'Database', value: 'Supabase PostgreSQL' },
-                { label: 'File Storage', value: 'Supabase Storage' },
-                { label: 'Data Ingestion', value: 'NewsAPI + Newspaper3k' },
-                // Fixed: was still showing old model name all-MiniLM-L6-v2
-                { label: 'Embeddings', value: 'Sentence Transformers (all-mpnet-base-v2)' },
-                { label: 'Dimensionality Reduction', value: 'UMAP' },
-                { label: 'Clustering', value: 'DBSCAN + Hierarchical Splitting (scikit-learn)' },
-                { label: 'LLM Labelling', value: 'Ollama (Llama 3.2)' },
-                { label: 'Backend API', value: 'FastAPI + Uvicorn (Render.com)' },
-                { label: 'Frontend', value: 'React + Three.js + React Three Fiber (Vercel)' },
-                { label: 'Languages', value: 'Python, JavaScript, SQL' },
-              ].map(item => (
-                <div key={item.label} className="stack-item">
-                  <span className="stack-label">{item.label}</span>
-                  <span className="stack-value">{item.value}</span>
+        <div className="right-panel">
+          <div className="visualization-container">
+            {loading && (
+              <div className="loading-overlay">
+                <div className="loading-spinner"></div>
+                <p>Loading visualization...</p>
+                <p className="loading-subtext">Reading pre-processed cluster data</p>
+              </div>
+            )}
+            {error && (
+              <div className="error-overlay">
+                <div className="error-box">
+                  <h2>Could Not Load Data</h2>
+                  <p>{error}</p>
+                  <button onClick={() => loadVisualization()}>Try Again</button>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+            {!loading && !error && articles.length > 0 && (
+              <NewsVisualization
+                articles={articles}
+                clusters={clusters}
+                selectedCluster={selectedCluster}
+              />
+            )}
           </div>
 
+          {selectedCluster !== null && selectedClusterArticles.length > 0 && (
+            <div className="article-panel">
+              <div className="article-panel-header">
+                <span
+                  className="article-panel-dot"
+                  style={{ backgroundColor: selectedClusterInfo?.color || '#8B7355' }}
+                />
+                <h2 className="article-panel-title">
+                  {selectedClusterInfo?.cluster_name}
+                </h2>
+                <span className="article-panel-count">
+                  {selectedClusterArticles.length} articles
+                </span>
+              </div>
+              <div className="article-panel-list">
+                {selectedClusterArticles.map((article, idx) => (
+                  <a
+                    key={article.article_id}
+                    href={article.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="article-panel-item"
+                  >
+                    <span className="article-panel-rank">{idx + 1}</span>
+                    <div className="article-panel-body">
+                      <div className="article-panel-item-title">{article.title}</div>
+                      <div className="article-panel-meta">
+                        <span className="article-panel-source">{article.source_name}</span>
+                        {article.author && (
+                          <span className="article-panel-author"> · {article.author}</span>
+                        )}
+                      </div>
+                    </div>
+                    <span className="article-panel-arrow">↗</span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<NewspaperFront />} />
+        <Route path="/viz" element={<VizPage />} />
+        <Route path="/about" element={<AboutMe />} />
+      </Routes>
+    </Router>
   );
 }

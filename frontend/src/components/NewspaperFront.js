@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './NewspaperFront.css';
 
@@ -7,7 +6,6 @@ console.log('[NewspaperFront] module loaded');
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-// Format date in old-fashioned newspaper style: "Thursday, the 26th of February, 2026"
 function formatNewspaperDate(dateStr) {
   if (!dateStr) return '';
   const [year, month, day] = dateStr.split('-').map(Number);
@@ -25,13 +23,12 @@ function formatNewspaperDate(dateStr) {
   return `${dayNames[date.getDay()]}, the ${ordinal(day)} of ${monthNames[month - 1]}, ${year}`;
 }
 
-// Decorative divider
 function Divider({ thick = false, ornate = false }) {
   if (ornate) {
     return (
       <div className="divider divider--ornate">
         <span className="divider-line" />
-        <span className="divider-diamond">◆</span>
+        <span className="divider-diamond">&#9670;</span>
         <span className="divider-line" />
       </div>
     );
@@ -39,9 +36,7 @@ function Divider({ thick = false, ornate = false }) {
   return <div className={`divider ${thick ? 'divider--thick' : ''}`} />;
 }
 
-// Individual article card — layout variant controlled by `variant` prop
 function ArticleCard({ article, variant = 'medium' }) {
-  // Word-count based truncation: show first N words, then link to full article
   const words = article.summary ? article.summary.split(' ') : [];
   const WORD_LIMIT = variant === 'lead' ? 160 : variant === 'medium' ? 100 : 70;
   const needsTruncation = words.length > WORD_LIMIT;
@@ -54,7 +49,7 @@ function ArticleCard({ article, variant = 'medium' }) {
       <div className="article-meta-top">
         <span className="article-source">{article.source_name}</span>
         {article.author && (
-          <span className="article-author"> · {article.author}</span>
+          <span className="article-author"> &middot; {article.author}</span>
         )}
       </div>
 
@@ -84,7 +79,7 @@ function ArticleCard({ article, variant = 'medium' }) {
               rel="noopener noreferrer"
               className="article-read-more"
             >
-              [Read full article ↗]
+              [Read full article &#8599;]
             </a>
           </>
         )}
@@ -95,8 +90,7 @@ function ArticleCard({ article, variant = 'medium' }) {
 
 export default function NewspaperFront() {
   console.log('[NewspaperFront] component rendering');
-  const navigate = useNavigate();
-  console.log('[NewspaperFront] useNavigate OK');
+
   const [highlights, setHighlights] = useState([]);
   const [date, setDate] = useState('');
   const [loading, setLoading] = useState(true);
@@ -120,7 +114,6 @@ export default function NewspaperFront() {
 
   const formattedDate = formatNewspaperDate(date);
 
-  // Layout: [0]=lead (wide), [1][2]=medium pair, [3][4]=small pair
   const lead = highlights[0];
   const mediums = highlights.slice(1, 3);
   const smalls = highlights.slice(3, 5);
@@ -128,7 +121,6 @@ export default function NewspaperFront() {
   return (
     <div className="newspaper">
 
-      {/* ── Masthead ── */}
       <header className="masthead">
         <div className="masthead-top-rule" />
         <div className="masthead-eyebrow">
@@ -136,7 +128,7 @@ export default function NewspaperFront() {
           <span className="masthead-eyebrow-right">Intelligence, Distilled Daily</span>
         </div>
         <div className="masthead-title-row">
-          <h1 className="masthead-title">Tomorrow's Archive</h1>
+          <h1 className="masthead-title">Tomorrow&#39;s Archive</h1>
         </div>
         <div className="masthead-subtitle-row">
           <div className="masthead-rule-left" />
@@ -144,23 +136,16 @@ export default function NewspaperFront() {
           <div className="masthead-rule-right" />
         </div>
         <div className="masthead-nav-row">
-          <button
-            className="masthead-nav-btn"
-            onClick={() => navigate('/viz')}
-          >
-            View 3D Visualization →
-          </button>
-          <button
-            className="masthead-nav-btn masthead-nav-btn--ghost"
-            onClick={() => navigate('/about')}
-          >
+          <a href="/viz" className="masthead-nav-btn">
+            View 3D Visualization &#8594;
+          </a>
+          <a href="/about" className="masthead-nav-btn masthead-nav-btn--ghost">
             About
-          </button>
+          </a>
         </div>
         <div className="masthead-bottom-rule" />
       </header>
 
-      {/* ── Body ── */}
       <main className="newspaper-body">
 
         {loading && (
@@ -174,16 +159,15 @@ export default function NewspaperFront() {
             <p className="newspaper-error-text">{error}</p>
             <p className="newspaper-error-sub">
               The pipeline may not have run yet.{' '}
-              <button className="newspaper-error-link" onClick={() => navigate('/viz')}>
-                Go to visualization →
-              </button>
+              <a href="/viz" className="newspaper-error-link">
+                Go to visualization &#8594;
+              </a>
             </p>
           </div>
         )}
 
         {!loading && !error && highlights.length > 0 && (
           <>
-            {/* Lead story — full width */}
             {lead && (
               <>
                 <section className="layout-lead">
@@ -193,7 +177,6 @@ export default function NewspaperFront() {
               </>
             )}
 
-            {/* Medium pair */}
             {mediums.length > 0 && (
               <>
                 <section className="layout-medium-pair">
@@ -210,7 +193,6 @@ export default function NewspaperFront() {
               </>
             )}
 
-            {/* Small pair */}
             {smalls.length > 0 && (
               <section className="layout-small-trio">
                 {smalls.map((article, i) => (
@@ -227,11 +209,10 @@ export default function NewspaperFront() {
         )}
       </main>
 
-      {/* ── Footer ── */}
       <footer className="newspaper-footer">
         <Divider thick />
         <p className="newspaper-footer-text">
-          Tomorrow's Archive — News clustered by machine, presented in ink.
+          Tomorrow&#39;s Archive &mdash; News clustered by machine, presented in ink.
           All articles sourced from international wire services and publications.
         </p>
       </footer>
